@@ -23,7 +23,7 @@ data class Turn(val items: Map<String, Int>) {
         items.all { (color, count) -> (available[color] ?: 0) >= count }
 
     fun minRequired(o: Turn): Turn = Turn((colors + o.colors).associateWith { maxOf(this[it], o[it]) })
-    fun powerCubes() = items.values.fold(1) { acc, result -> acc * result }
+    fun powerCubes() = items.values.reduce { f1, f2 -> f1 * f2 }
 }
 
 data class Game(val id: Int, val turns: List<Turn>) {
@@ -32,17 +32,11 @@ data class Game(val id: Int, val turns: List<Turn>) {
     private fun minRequired(): Turn = turns.fold(Turn(emptyMap())) { acc, turn -> acc.minRequired(turn) }
 
     companion object {
-        fun parse(s: String): Game {
-            check(s.take(5) == "Game ")
-            val cPos = s.indexOf(':')
-            val id = s.substring(5, cPos).toInt()
-            val remainder = s.drop(cPos + 1)
-            val turns = remainder.split(';').map { turnString ->
-                Turn(turnString.split(',').map { it.trim().split(' ') }
-                    .associate { (count, color) -> color to count.toInt() })
-            }
-            return Game(id, turns)
+        fun parse(s: String): Game = s.split(':').let { (prefix, remainder) ->
+            Game(prefix.drop(5).toInt(), remainder.split(';').map { parseTurn(it) })
         }
-    }
 
+        private fun parseTurn(s: String) = Turn(s.split(',').map { it.trim().split(' ') }
+            .associate { (count, color) -> color to count.toInt() })
+    }
 }
