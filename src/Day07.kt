@@ -1,5 +1,5 @@
 private enum class Card {
-    CA, CK, CQ, CJ, CT, C9, C8, C7, C6, C5, C4, C3, C2, LOW;
+    CA, CK, CQ, CJ, CT, C9, C8, C7, C6, C5, C4, C3, C2, JOKER;
 
     override fun toString(): String = name[1].toString()
 }
@@ -32,45 +32,40 @@ private enum class HandType {
 
 private fun handTypeFrom(cards: List<Card>) = HandType.entries.first { it.matches(cards) }
 
-private data class Hand(val cards: List<Card>, val bid: Int) {
+private data class Hand(val cards: List<Card>, val bid: Int, val handType: HandType = handTypeFrom(cards)) :
+    Comparable<Hand> {
     constructor(s: String) : this(s.take(5).map { Card.valueOf("C$it") }, s.drop(5).trim().toInt())
 
-    val handType: HandType = handTypeFrom(cards)
-    val handTypeWithJoker: HandType
-        get() {
-            if (Card.CJ !in cards) return handType
-            val nonJokers = cards.filter { it != Card.CJ }
-            val jokerCount = cards.size - nonJokers.size
-            return if (jokerCount == 5)
-                HandType.FIVE
-            else
-                nonJokers.distinct().minOf { card -> handTypeFrom(nonJokers + List(jokerCount) { card }) }
+    fun bestWithJokers(): Hand {
+        val nonJokers = cards.filter { it != Card.CJ }
+        return when (val jokerCount = cards.size - nonJokers.size) {
+            0 -> this
+            5 -> Hand(List(5) { Card.JOKER }, bid, HandType.FIVE)
+            else -> {
+                val bestHand =
+                    nonJokers.distinct().minOf { card -> handTypeFrom(nonJokers + List(jokerCount) { card }) }
+                Hand(cards.map { if (it == Card.CJ) Card.JOKER else it }, bid, bestHand)
+            }
         }
+    }
+
+    override fun compareTo(other: Hand): Int {
+        val rt = handType.compareTo(other.handType)
+        if (rt != 0) return -rt
+        return cards.zip(other.cards).firstNotNullOfOrNull { (t, o) -> if (t == o) null else -t.compareTo(o) } ?: 0
+    }
 
     override fun toString() =
-        cards.joinToString("") + " " + cards.groupBy { it } + " " + handTypeWithJoker + " " + bid
+        cards.joinToString("") + " " + cards.groupBy { it } + " " + handType + " " + bid
 }
-
-private val part1compare: Comparator<Hand> = compareBy<Hand>(
-    { it.handType }, { it.cards[0] }, { it.cards[1] }, { it.cards[2] }, { it.cards[3] }, { it.cards[4] }
-).reversed()
-private val part2compare: Comparator<Hand> = compareBy<Hand>(
-    { it.handTypeWithJoker },
-    { it.cards[0].nonJoker },
-    { it.cards[1].nonJoker },
-    { it.cards[2].nonJoker },
-    { it.cards[3].nonJoker },
-    { it.cards[4].nonJoker }
-).reversed()
-
-private val Card.nonJoker get() = if (this == Card.CJ) Card.LOW else this
 
 fun main() {
     fun part1(input: List<String>) =
-        input.map { Hand(it) }.sortedWith(part1compare).mapIndexed { index, hand -> hand.bid * (index + 1) }.sum()
+        input.map { Hand(it) }.sorted().mapIndexed { index, hand -> hand.bid * (index + 1) }.sum()
 
     fun part2(input: List<String>) =
-        input.map { Hand(it) }.sortedWith(part2compare).mapIndexed { index, hand -> hand.bid * (index + 1) }.sum()
+        input.map { Hand(it).bestWithJokers() }.sorted()
+            .mapIndexed { index, hand -> hand.bid * (index + 1) }.sum()
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day07_test")
