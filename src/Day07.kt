@@ -32,7 +32,7 @@ private enum class HandType {
 
 private fun handTypeFrom(cards: List<Card>) = HandType.entries.first { it.matches(cards) }
 
-private data class Hand(val cards: List<Card>, val bid: Int) : Comparable<Hand> {
+private data class Hand(val cards: List<Card>, val bid: Int) {
     constructor(s: String) : this(s.take(5).map { Card.valueOf("C$it") }, s.drop(5).trim().toInt())
 
     val handType: HandType = handTypeFrom(cards)
@@ -46,12 +46,6 @@ private data class Hand(val cards: List<Card>, val bid: Int) : Comparable<Hand> 
             else
                 nonJokers.distinct().minOf { card -> handTypeFrom(nonJokers + List(jokerCount) { card }) }
         }
-
-    override fun compareTo(other: Hand): Int {
-        val rt = handType.compareTo(other.handType)
-        if (rt != 0) return -rt
-        return cards.zip(other.cards).firstNotNullOfOrNull { (t, o) -> if (t == o) null else -t.compareTo(o) } ?: 0
-    }
 
     override fun toString() =
         cards.joinToString("") + " " + cards.groupBy { it } + " " + handTypeWithJoker + " " + bid
