@@ -68,12 +68,12 @@ fun main() {
     }
 
     fun part1(input: List<String>): Long {
-        val targetSeeds = (input[0]).removePrefix("seeds: ").split(' ').map { it.trim().toLong() }
+        val targetSeeds = (input[0]).removePrefix("seeds: ").splitToLongs()
         return AlmanacPart1(targetSeeds, parseMaps(input)).solve()
     }
 
     fun part2(input: List<String>): Long {
-        val targetSeeds = (input[0]).removePrefix("seeds: ").split(' ').map { it.trim().toLong() }
+        val targetSeeds = (input[0]).removePrefix("seeds: ").splitToLongs()
             .chunked(2).map { (min, length) -> LongRange(min, min + length - 1) }
         return AlmanacPart2(targetSeeds, parseMaps(input)).solve()
     }

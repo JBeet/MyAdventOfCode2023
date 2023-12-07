@@ -15,7 +15,7 @@ fun main() {
     part2(input).println()
 }
 
-data class Turn(val items: Map<String, Int>) {
+private data class Turn(val items: Map<String, Int>) {
     private val colors = items.keys
     operator fun get(color: String) = items[color] ?: 0
 
@@ -26,7 +26,7 @@ data class Turn(val items: Map<String, Int>) {
     fun powerCubes() = items.values.reduce { f1, f2 -> f1 * f2 }
 }
 
-data class Game(val id: Int, val turns: List<Turn>) {
+private data class Game(val id: Int, val turns: List<Turn>) {
     fun isPossible(available: Map<String, Int>) = turns.all { it.isPossible(available) }
     fun powerCubes() = minRequired().powerCubes()
     private fun minRequired(): Turn = turns.fold(Turn(emptyMap())) { acc, turn -> acc.minRequired(turn) }

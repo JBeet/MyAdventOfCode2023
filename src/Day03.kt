@@ -19,7 +19,7 @@ fun part2(input: List<String>): Int = Engine(input).run {
     }
 }
 
-class Engine(field: List<String>) {
+private class Engine(field: List<String>) {
     data class EngineNumber(val value: Int, val row: Int, val colStart: Int, val colEnd: Int) {
         private val adjacentColumns = (colStart - 1)..(colEnd + 1)
         private val adjacentRows = (row - 1)..(row + 1)

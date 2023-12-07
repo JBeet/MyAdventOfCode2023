@@ -4,8 +4,7 @@ fun main() {
         val points = if (winCount == 0) 0 else 1 shl (winCount - 1)
     }
 
-    fun parseSet(s: String): Set<Int> =
-        s.split(' ').filter { it.isNotEmpty() }.mapTo(mutableSetOf()) { it.toInt() }
+    fun parseSet(s: String): Set<Int> = s.splitToInts().toSet()
 
     fun Card(s: String) = s.substringAfter(':').trim().split('|').let { (w, m) ->
         Card(parseSet(w), parseSet(m))
