@@ -1,3 +1,8 @@
+package aoc02
+
+import utils.println
+import utils.readInput
+
 fun main() {
     fun parseGames(input: List<String>) = input.map { Game.parse(it) }
 
@@ -7,10 +12,10 @@ fun main() {
     fun part2(input: List<String>) = parseGames(input).sumOf { it.powerCubes() }
 
     // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day02_test")
+    val testInput = readInput("aoc02/Day02_test")
     check(part1(testInput) == 8)
 
-    val input = readInput("Day02")
+    val input = readInput("aoc02/Day02")
     part1(input).println()
     part2(input).println()
 }

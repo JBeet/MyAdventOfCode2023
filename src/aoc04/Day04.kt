@@ -1,3 +1,9 @@
+package aoc04
+
+import utils.println
+import utils.readInput
+import utils.splitToInts
+
 fun main() {
     data class Card(val winning: Set<Int>, val mine: Set<Int>) {
         val winCount = mine.count { it in winning }
@@ -28,11 +34,11 @@ fun main() {
         }.cardsSoFar
 
     // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day04_test")
+    val testInput = readInput("aoc04/Day04_test")
     check(part1(testInput) == 13)
     check(part2(testInput) == 30)
 
-    val input = readInput("Day04")
+    val input = readInput("aoc04/Day04")
     part1(input).println()
     part2(input).println()
 }

@@ -1,3 +1,8 @@
+package aoc01
+
+import utils.println
+import utils.readInput
+
 fun main() {
     fun part1(input: List<String>): Int = input.sumOf { s ->
         val firstDigit = s.first { it.isDigit() }
@@ -20,13 +25,13 @@ fun main() {
     }
 
     // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day01_test")
+    val testInput = readInput("aoc01/Day01_test")
     check(part1(testInput) == 142)
 
-    val testInput2 = readInput("Day01_test2")
+    val testInput2 = readInput("aoc01/Day01_test2")
     check(part2(testInput2) == 281) { "Expected 281 but found ${part2(testInput2)}" }
 
-    val input = readInput("Day01")
+    val input = readInput("aoc01/Day01")
     part1(input).println()
     part2(input).println()
 }

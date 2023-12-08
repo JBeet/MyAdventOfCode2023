@@ -1,3 +1,11 @@
+package aoc08
+
+import utils.greatestCommonDivisor
+import utils.leastCommonMultiple
+import utils.notBlank
+import utils.println
+import utils.readInput
+
 private enum class Direction {
     L, R
 }
@@ -45,13 +53,13 @@ private data class GhostMap(val steps: List<Direction>, val paths: Map<String, P
         }
         return pathsToEndNodes.fold(listOf(Result(0, 1))) { results, ci ->
             results.flatMap { prevResult ->
-                val gcd = gcd(prevResult.cycleLength, ci.cycleLength.toLong())
+                val gcd = greatestCommonDivisor(prevResult.cycleLength, ci.cycleLength.toLong())
                 ci.nodesByIndex.keys.mapNotNull { offset ->
                     if ((prevResult.offset - offset) % gcd == 0L) {
                         var newOffset = offset.toLong()
                         while ((newOffset - prevResult.offset) % prevResult.cycleLength != 0L)
                             newOffset += ci.cycleLength
-                        Result(newOffset, lcm(prevResult.cycleLength, ci.cycleLength.toLong()))
+                        Result(newOffset, leastCommonMultiple(prevResult.cycleLength, ci.cycleLength.toLong()))
                     } else
                         null
                 }
@@ -67,12 +75,7 @@ private data class GhostMap(val steps: List<Direction>, val paths: Map<String, P
         else
             CycleInfo(nodes, idx - prevIndex)
     }
-
-    private fun lcm(a: Long, b: Long): Long = (a * b) / gcd(a, b)
-    private tailrec fun gcd(a: Long, b: Long): Long = if (a == b) a else if (a < b) gcd(b, a) else gcd(a - b, b)
 }
-
-private fun List<String>.notBlank() = filter { it.isNotBlank() }
 
 fun main() {
     fun parseMap(input: List<String>): GhostMap {
@@ -87,18 +90,18 @@ fun main() {
     fun part2naive(input: List<String>) = parseMap(input).findPart2naive()
 
     // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day08_test")
+    val testInput = readInput("aoc08/Day08_test")
     check(part1(testInput) == 2)
-    val testInput2 = readInput("Day08_test2")
+    val testInput2 = readInput("aoc08/Day08_test2")
     check(part1(testInput2) == 6)
 
-    val input = readInput("Day08")
+    val input = readInput("aoc08/Day08")
     part1(input).println()
 
 
-    val testInput3 = readInput("Day08_test3")
+    val testInput3 = readInput("aoc08/Day08_test3")
     check(part2(testInput3) == 6L)
-    val testInput4 = readInput("Day08_test4")
+    val testInput4 = readInput("aoc08/Day08_test4")
     val expected = part2naive(testInput4).toLong()
     check(part2(testInput4) == expected)
     part2(input).println()

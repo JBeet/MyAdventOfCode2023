@@ -1,3 +1,5 @@
+package utils
+
 import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.io.path.Path
@@ -23,3 +25,11 @@ fun Any?.println() = println(this)
 fun String.splitOnSpaces() = split(' ').filter { it.isNotBlank() }
 fun String.splitToInts() = splitOnSpaces().map { it.toInt() }
 fun String.splitToLongs() = splitOnSpaces().map { it.toLong() }
+fun List<String>.notBlank() = filter { it.isNotBlank() }
+
+fun leastCommonMultiple(a: Long, b: Long): Long = (a * b) / greatestCommonDivisor(a, b)
+tailrec fun greatestCommonDivisor(a: Long, b: Long): Long {
+    check(b > 0L) { "No GCD for $a, $b" }
+    val mod = a % b
+    return if (mod == 0L) b else greatestCommonDivisor(b, mod)
+}

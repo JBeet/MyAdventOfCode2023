@@ -1,3 +1,9 @@
+package aoc06
+
+import utils.println
+import utils.readInput
+import utils.splitToLongs
+
 private data class Race(val time: Long, val maxDistance: Long) {
     val winCount: Int
         get() = (1 until time).count { distance(it) > maxDistance }
@@ -21,10 +27,10 @@ fun main() {
     }
 
 // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day06_test")
+    val testInput = readInput("aoc06/Day06_test")
     check(part1(testInput) == 288) { "part 1" }
 
-    val input = readInput("Day06")
+    val input = readInput("aoc06/Day06")
     part1(input).println()
 
     check(part2(testInput) == 71503) { "part 2" }

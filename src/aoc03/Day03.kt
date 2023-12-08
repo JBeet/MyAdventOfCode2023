@@ -1,10 +1,15 @@
+package aoc03
+
+import utils.println
+import utils.readInput
+
 fun main() {
     // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day03_test")
+    val testInput = readInput("aoc03/Day03_test")
     check(part1(testInput) == 4361)
     check(part2(testInput) == 467835)
 
-    val input = readInput("Day03")
+    val input = readInput("aoc03/Day03")
     part1(input).println()
     part2(input).println()
 }

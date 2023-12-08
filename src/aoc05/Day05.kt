@@ -1,3 +1,9 @@
+package aoc05
+
+import utils.println
+import utils.readInput
+import utils.splitToLongs
+
 fun main() {
     data class Translation(val destinationStart: Long, val sourceStart: Long, val length: Long) {
         val sourceEnd = sourceStart + length - 1
@@ -79,10 +85,10 @@ fun main() {
     }
 
 // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day05_test")
+    val testInput = readInput("aoc05/Day05_test")
     check(part1(testInput) == 35L) { "part 1" }
 
-    val input = readInput("Day05")
+    val input = readInput("aoc05/Day05")
     part1(input).println()
 
     check(part2(testInput) == 46L) { "part 2" }

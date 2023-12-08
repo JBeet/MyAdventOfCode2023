@@ -1,3 +1,8 @@
+package aoc07
+
+import utils.println
+import utils.readInput
+
 private enum class Card {
     CA, CK, CQ, CJ, CT, C9, C8, C7, C6, C5, C4, C3, C2, JOKER;
 
@@ -68,10 +73,10 @@ fun main() {
             .mapIndexed { index, hand -> hand.bid * (index + 1) }.sum()
 
     // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day07_test")
+    val testInput = readInput("aoc07/Day07_test")
     check(part1(testInput) == 6440)
 
-    val input = readInput("Day07")
+    val input = readInput("aoc07/Day07")
     part1(input).println()
 
     check(part2(testInput) == 5905)
