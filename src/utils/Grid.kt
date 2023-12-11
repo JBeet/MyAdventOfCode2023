@@ -6,12 +6,6 @@ enum class Direction(val delta: Position) {
     N(Position(-1, 0)), E(Position(0, +1)), S(Position(+1, 0)), W(Position(0, -1)),
     NE(Position(-1, +1)), SE(Position(+1, +1)), NW(Position(-1, -1)), SW(Position(+1, -1));
 
-    companion object {
-        val NESW = setOf(N, E, S, W)
-    }
-
-    val isNESW: Boolean
-        get() = this in NESW
     val inverse: Direction
         get() = when (this) {
             N -> S
@@ -52,13 +46,20 @@ data class Position(val row: Long, val column: Long) {
     val columnBefore: Sequence<Position> = (0..<row).asSequence().map { Position(it, column) }
 
     operator fun plus(delta: Position) = Position(row + delta.row, column + delta.column)
-    fun manhattenDistanceTo(o: Position) = abs(row - o.row) + abs(column - o.column)
+    operator fun minus(term: Position) = Position(row - term.row, column - term.column)
+    operator fun unaryMinus() = Position(-row, -column)
+    operator fun times(f: Int) = times(f.toLong())
+    operator fun times(f: Long) = Position(row * f, column * f)
+    fun manhattanDistanceTo(o: Position) = abs(row - o.row) + abs(column - o.column)
     override fun toString(): String = "($row,$column)"
 
     companion object {
         val zero: Position = Position(0L, 0L)
     }
 }
+
+operator fun Int.times(f: Position) = f * toLong()
+operator fun Long.times(f: Position) = f * this
 
 abstract class AbstractGrid<C : GridCell> : Grid<C> {
     fun connections(pos: Position) = connections(pos, cell(pos))

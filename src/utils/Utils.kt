@@ -40,6 +40,29 @@ tailrec fun greatestCommonDivisor(a: Long, b: Long): Long {
     return if (mod == 0L) b else greatestCommonDivisor(b, mod)
 }
 
+fun <T> List<T>.allPairs(): Sequence<Pair<T, T>> = allPermutations(2, 2).map { it[0] to it[1] }
+
+fun <T> List<T>.allPermutations(minLength: Int = 0, maxLength: Int = size): Sequence<List<T>> = sequence {
+    this.yieldAllPermutations(minLength, maxLength, this@allPermutations, mutableListOf<T>())
+}
+
+private suspend fun <T> SequenceScope<List<T>>.yieldAllPermutations(
+    minLength: Int, maxLength: Int,
+    remainder: List<T>, currentPermutation: MutableList<T>
+) {
+    if (maxLength >= 0 && minLength <= remainder.size)
+        if (remainder.isEmpty() || maxLength == 0)
+            yield(currentPermutation.toList())
+        else {
+            val head = remainder[0]
+            val tail = remainder.subList(1, remainder.size)
+            currentPermutation += head
+            yieldAllPermutations(minLength - 1, maxLength - 1, tail, currentPermutation)
+            currentPermutation.removeLast()
+            yieldAllPermutations(minLength, maxLength, tail, currentPermutation)
+        }
+}
+
 enum class AnsiColor(private val fg: Int, private val bg: Int) {
     BLACK(30, 40), RED(31, 41), GREEN(32, 42), YELLOW(33, 43), BLUE(34, 44),
     MAGENTA(35, 45), CYAN(36, 46), WHITE(37, 47), DEFAULT(39, 49), RESET(0, 0);

@@ -30,9 +30,8 @@ fun main() {
         }
     }
 
-    fun List<Position>.sumOfShortestPathLengths() = mapIndexed { idx, cur ->
-        subList(0, idx).sumOf { it.manhattenDistanceTo(cur) }
-    }.sum()
+    fun List<Position>.sumOfShortestPathLengths() =
+        allPairs().sumOf { (a, b) -> a.manhattanDistanceTo(b) }
 
     fun parse(input: List<String>) = GxGrid(input)
 
