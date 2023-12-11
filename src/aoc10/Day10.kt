@@ -1,93 +1,80 @@
 package aoc10
 
-import utils.readInput
-import utils.println
-import java.lang.Integer.min
+import utils.*
 
-enum class Pipe(
-    val inpChar: Char,
-    val isDown: Boolean = false, val isUp: Boolean = false,
-    val isLeft: Boolean = false, val isRight: Boolean = false
-) {
-    `┌`('F', isDown = true, isRight = true), `┐`('7', isDown = true, isLeft = true),
-    `└`('L', isUp = true, isRight = true), `┘`('J', isUp = true, isLeft = true),
-    `│`('|', isDown = true, isUp = true), `─`('-', isLeft = true, isRight = true),
-    `╳`('S'), `□`('.');
-}
-
-class MetalField(private val pipes: List<List<Pipe>>) {
-    private val rowCount: Int = pipes.size
-    private val colCount: Int = pipes[0].size.also { cc ->
-        check(pipes.all { it.size == cc }) { "expected length $cc" }
-    }
-    private val distances: Array<Array<Int>> by lazy {
-        val target = Array(rowCount) { Array(colCount) { -1 } }
-        val (startR, startC) = findPosition(Pipe.`╳`)
-        val fillDistances = DeepRecursiveFunction<Triple<Int, Int, Int>, Unit> { (r, c, dist) ->
-            if (r < 0 || r >= rowCount) return@DeepRecursiveFunction
-            if (c < 0 || c >= colCount) return@DeepRecursiveFunction
-            if (target[r][c] in 0..dist) return@DeepRecursiveFunction
-            val pipe = pipe(r, c)
-            if (pipe != Pipe.`□`)
-                target[r][c] = dist
-            if (isLeft(r, c))
-                callRecursive(Triple(r, c - 1, dist + 1))
-            if (isRight(r, c))
-                callRecursive(Triple(r, c + 1, dist + 1))
-            if (isDown(r, c))
-                callRecursive(Triple(r + 1, c, dist + 1))
-            if (isUp(r, c))
-                callRecursive(Triple(r - 1, c, dist + 1))
-        }
-        fillDistances(Triple(startR, startC, 0))
-        target
+sealed interface MetalCell : GridCell {
+    data class MPipe(override val connections: Set<Direction>) : MetalCell
+    data object MEmpty : MetalCell {
+        override fun toString(): String = "."
     }
 
-    private fun findPosition(p: Pipe) = pipes.withIndex()
-        .firstNotNullOf { (rowIndex, row) -> row.indexOf(p).let { if (it < 0) null else (rowIndex to it) } }
-
-    fun findMaxDistance(): Int = distances.maxOf { it.max() }
-
-    fun countInside(): Int = (0..<rowCount).sumOf { row -> (0..<colCount).count { col -> isInsideLoop(row, col) } }
-
-    private fun isInsideLoop(row: Int, col: Int) = (!isPartOfLoop(row, col)) && (countCrossings(row, col) % 2 == 1)
-    private fun isPartOfLoop(row: Int, c: Int) = distance(row, c) >= 0
-
-    private fun isSnake(row: Int, col: Int): Boolean = pipe(row, col) == Pipe.`╳`
-    private fun countCrossings(row: Int, col: Int) = min(countCrossingsDown(row, col), countCrossingsUp(row, col))
-    private fun countCrossingsDown(row: Int, col: Int) = (0..<col).count { c -> isPartOfLoop(row, c) && isDown(row, c) }
-    private fun countCrossingsUp(row: Int, col: Int) = (0..<col).count { c -> isPartOfLoop(row, c) && isUp(row, c) }
-
-    private fun isDown(r: Int, c: Int) = if (isSnake(r, c)) pipe(r + 1, c).isUp else pipe(r, c).isDown
-    private fun isUp(r: Int, c: Int) = if (isSnake(r, c)) pipe(r - 1, c).isDown else pipe(r, c).isUp
-    private fun isLeft(r: Int, c: Int) = if (isSnake(r, c)) pipe(r, c - 1).isRight else pipe(r, c).isLeft
-    private fun isRight(r: Int, c: Int) = if (isSnake(r, c)) pipe(r, c + 1).isLeft else pipe(r, c).isRight
-
-    private fun distance(r: Int, c: Int) = if (r in 0..<rowCount && c in 0..<colCount) distances[r][c] else -1
-    private fun pipe(r: Int, c: Int) = if (r in 0..<rowCount && c in 0..<colCount) pipes[r][c] else Pipe.`□`
-
-    override fun toString() = "$rowCount x $colCount\n" + pipes.joinToString("\n") { it.joinToString("") }
+    data object MAnimal : MetalCell {
+        override fun toString(): String = "╳"
+    }
 }
 
 fun main() {
-    fun parseChar(ch: Char): Pipe = Pipe.entries.first { it.inpChar == ch }
-    fun parseLine(s: String): List<Pipe> = s.map { parseChar(it) }
-    fun parse(input: List<String>): MetalField = MetalField(input.map { parseLine(it) }.filter { it.isNotEmpty() })
+    class MetalGrid(lines: List<List<MetalCell>>) : FilledGrid<MetalCell>(lines, MetalCell.MEmpty) {
+        private val distances: Map<Position, Int> by lazy {
+            val target = mutableMapOf<Position, Int>()
+            val startPos = findAll(MetalCell.MAnimal).single()
+            foldConnected(startPos, 0) { position, distance ->
+                val oldValue = target[position]
+                if (oldValue != null && oldValue < distance) return@foldConnected null
+                target[position] = distance
+                return@foldConnected distance + 1
+            }
+            target
+        }
 
-    fun part1(input: List<String>): Int {
-        return parse(input).findMaxDistance()
+        override fun connections(pos: Position, cell: MetalCell) = if (cell == MetalCell.MAnimal)
+            Direction.entries.filter { it.inverse in connections(pos + it.delta) }
+        else
+            super.connections(pos, cell)
+
+        fun findMaxDistance(): Int = distances.values.max()
+        fun countInside(): Int = countWithEmpty { pos -> isInsideLoop(pos) }
+        private fun isInsideLoop(pos: Position) = (!isPartOfLoop(pos)) && (countCrossings(pos) % 2 == 1)
+        private fun isPartOfLoop(pos: Position) = pos in distances.keys
+        private fun countCrossings(pos: Position) =
+            pos.rowBefore.count { isPartOfLoop(it) && Direction.S in connections(it) }
+
+        override fun cellAsString(pos: Position, cell: MetalCell) =
+            if (cell == MetalCell.MAnimal) cell.toString() else super.cellAsString(pos, cell)
+
+        override fun fgColor(pos: Position) = when {
+            cell(pos) == MetalCell.MAnimal -> AnsiColor.RED
+            isPartOfLoop(pos) -> AnsiColor.BLUE
+            isInsideLoop(pos) -> AnsiColor.MAGENTA
+            else -> AnsiColor.DEFAULT
+        }
     }
 
-    fun part2(input: List<String>): Int {
-        return parse(input).countInside()
+    fun parseChar(ch: Char): MetalCell = when (ch) {
+        'F' -> MetalCell.MPipe(setOf(Direction.E, Direction.S))
+        '7' -> MetalCell.MPipe(setOf(Direction.W, Direction.S))
+        'L' -> MetalCell.MPipe(setOf(Direction.E, Direction.N))
+        'J' -> MetalCell.MPipe(setOf(Direction.W, Direction.N))
+        '|' -> MetalCell.MPipe(setOf(Direction.N, Direction.S))
+        '-' -> MetalCell.MPipe(setOf(Direction.E, Direction.W))
+        '.' -> MetalCell.MEmpty
+        'S' -> MetalCell.MAnimal
+        else -> error("Unknown character: $ch")
     }
+
+    fun parseLine(s: String): List<MetalCell> = s.map { parseChar(it) }
+    fun parse(input: List<String>): MetalGrid = MetalGrid(input.filter { it.isNotEmpty() }.map { parseLine(it) })
+
+    fun part1(input: List<String>): Int = parse(input).findMaxDistance()
+    fun part2(input: List<String>): Int = parse(input).countInside()
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("aoc10/Day10_test")
     check(part1(testInput) == 8)
-
     val input = readInput("aoc10/Day10")
+    println(parse(input))
     part1(input).println()
+
     val testInput2 = readInput("aoc10/Day10_test2")
     check(part2(testInput2) == 10) { "Expected 10 but found " + part2(testInput2) }
     val testInput3 = readInput("aoc10/Day10_test3")

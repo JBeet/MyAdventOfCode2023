@@ -1,52 +1,50 @@
-package aoc01
+package aoc11
 
-import utils.println
-import utils.readInput
-import kotlin.math.abs
+import utils.*
 
 fun main() {
-    class BaseGalaxies(private val input: List<String>) {
-        private val colCount: Int = input[0].length.also { cc ->
-            check(input.all { it.length == cc }) { "expected length $cc" }
-        }
-        private val rowsWithoutGalaxy =
-            input.mapIndexedNotNullTo(mutableSetOf()) { i, s -> if (s.indexOf('#') >= 0) null else i }
-        private val columnsWithoutGalaxy = (0..<colCount).filterTo(mutableSetOf()) { c ->
-            input.none { it[c] == '#' }
+    data class GxCell(val ch: Char) : GridCell {
+        override fun toString(): String = ch.toString()
+    }
+
+    class GxGrid(input: List<String>) : FilledGrid<GxCell>(input.map { r -> r.map { GxCell(it) } }, GxCell('.')) {
+        private val emptyRows = rows.filter { it.isEmpty }.map { it.index }.toSortedSet()
+        private val emptyColumns = columns.filter { it.isEmpty }.map { it.index }.toSortedSet()
+        private fun galaxies() = findAll(GxCell('#'))
+        fun expanded(factor: Long = 1L) = galaxies().map { expand(it, factor) }
+
+        private fun expand(position: Position, factor: Long) =
+            Position(position.row + emptyRows.count { it < position.row } * factor,
+                position.column + emptyColumns.count { it < position.column } * factor)
+
+        override fun fgColor(pos: Position): AnsiColor = when {
+            pos.column in emptyColumns || pos.row in emptyRows -> AnsiColor.WHITE
+            else -> AnsiColor.DEFAULT
         }
 
-        fun expanded(factor: Long = 1L): List<Pair<Long, Long>> = buildList {
-            var rowShift = 0
-            for (orgRowIndex in input.indices)
-                if (orgRowIndex in rowsWithoutGalaxy)
-                    rowShift++
-                else {
-                    val row = input[orgRowIndex]
-                    var colShift = 0
-                    for (orgColIndex in row.indices) {
-                        if (orgColIndex in columnsWithoutGalaxy)
-                            colShift++
-                        else if (row[orgColIndex] == '#')
-                            add((orgRowIndex + rowShift * factor) to (orgColIndex + colShift * factor))
-                    }
-                }
+        override fun bgColor(pos: Position): AnsiColor = when {
+            pos.column in emptyColumns && pos.row in emptyRows -> AnsiColor.MAGENTA
+            pos.column in emptyColumns -> AnsiColor.RED
+            pos.row in emptyRows -> AnsiColor.BLUE
+            else -> AnsiColor.DEFAULT
         }
     }
 
-    fun manhattan(a: Pair<Long, Long>, b: Pair<Long, Long>): Long = abs(a.first - b.first) + abs(a.second - b.second)
+    fun List<Position>.sumOfShortestPathLengths() = mapIndexed { idx, cur ->
+        subList(0, idx).sumOf { it.manhattenDistanceTo(cur) }
+    }.sum()
 
-    fun List<Pair<Long, Long>>.sumOfShortestPathLengths() = foldIndexed(0L) { idx, sum, cur ->
-        sum + subList(0, idx).sumOf { manhattan(it, cur) }
-    }
+    fun parse(input: List<String>) = GxGrid(input)
 
-    fun part1(input: List<String>): Long = BaseGalaxies(input).expanded().sumOfShortestPathLengths()
-    fun part2(input: List<String>, factor: Long): Long = BaseGalaxies(input).expanded(factor).sumOfShortestPathLengths()
+    fun part1(input: List<String>): Long = parse(input).expanded().sumOfShortestPathLengths()
+    fun part2(input: List<String>, factor: Long): Long = parse(input).expanded(factor).sumOfShortestPathLengths()
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("aoc11/Day11_test")
     check(part1(testInput) == 374L)
 
     val input = readInput("aoc11/Day11")
+    println(parse(input))
     part1(input).println()
     check(part2(testInput, 9) == 1030L)
     check(part2(testInput, 99) == 8410L)
