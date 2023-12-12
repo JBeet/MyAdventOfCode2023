@@ -14,67 +14,55 @@ private data class Path(val l: String, val r: String) {
     fun select(d: Direction) = if (d == Direction.L) l else r
 }
 
-private data class CycleInfo(val cycleLength: Int, val nodesByIndex: Map<Int, String>) {
-    constructor(indicesByNode: Map<String, List<Int>>, cycleLength: Int) : this(
-        cycleLength, indicesByNode.flatMap { (node, indices) ->
-            indices.map { it to node }
-        }.toMap()
-    )
+private data class NodeCycle(val offset: Long, val cycleLength: Long) {
+    fun joinWith(cyclesForThisNode: List<NodeCycle>): List<NodeCycle> =
+        cyclesForThisNode.mapNotNull { this + it }
 
-    fun filter(predicate: (String) -> Boolean) = copy(nodesByIndex = nodesByIndex.filterValues(predicate))
+    operator fun plus(o: NodeCycle): NodeCycle? {
+        val gcd = greatestCommonDivisor(cycleLength, o.cycleLength)
+        return if ((offset - o.offset) % gcd == 0L) {
+            var newOffset = o.offset
+            while ((newOffset - offset) % cycleLength != 0L)
+                newOffset += o.cycleLength
+            NodeCycle(newOffset, leastCommonMultiple(cycleLength, o.cycleLength))
+        } else
+            null
+    }
 }
-
-private data class Result(val offset: Long, val cycleLength: Long)
 
 private data class GhostMap(val steps: List<Direction>, val paths: Map<String, Path>) {
     fun findPart1(): Int = findPart1("AAA", 0)
 
-    private tailrec fun findPart1(current: String, idx: Int): Int {
-        if (current == "ZZZ") return idx
-        return findPart1(next(current, idx), idx + 1)
-    }
+    private tailrec fun findPart1(current: String, idx: Int): Int =
+        if (current == "ZZZ") idx else findPart1(next(current, idx), idx + 1)
 
-    private fun next(current: String, idx: Int): String {
-        val step = steps[idx % steps.size]
-        return paths.getValue(current).select(step)
-    }
+    private fun next(current: String, idx: Int): String =
+        paths.getValue(current).select(steps[idx % steps.size])
 
     fun findPart2naive(): Int = findPart2naive(paths.keys.filter { it.endsWith("A") }, 0)
 
-    private tailrec fun findPart2naive(current: Collection<String>, idx: Int): Int {
-        if (current.all { it.endsWith('Z') }) return idx
-        return findPart2naive(current.map { next(it, idx) }, idx + 1)
-    }
+    private tailrec fun findPart2naive(current: Collection<String>, idx: Int): Int =
+        if (current.all { it.endsWith('Z') }) idx else findPart2naive(current.map { next(it, idx) }, idx + 1)
 
-    fun findPart2(): Long {
-        val startingNodes = paths.keys.filter { it.endsWith("A") }
-        val pathsToEndNodes = startingNodes.map { buildCycle(it, 0, emptyMap()) }.map { ci ->
-            ci.filter { it.endsWith('Z') }
-        }
-        return pathsToEndNodes.fold(listOf(Result(0, 1))) { results, ci ->
-            results.flatMap { prevResult ->
-                val gcd = greatestCommonDivisor(prevResult.cycleLength, ci.cycleLength.toLong())
-                ci.nodesByIndex.keys.mapNotNull { offset ->
-                    if ((prevResult.offset - offset) % gcd == 0L) {
-                        var newOffset = offset.toLong()
-                        while ((newOffset - prevResult.offset) % prevResult.cycleLength != 0L)
-                            newOffset += ci.cycleLength
-                        Result(newOffset, leastCommonMultiple(prevResult.cycleLength, ci.cycleLength.toLong()))
-                    } else
-                        null
-                }
-            }
-        }.minOf { it.offset }
-    }
+    fun findPart2() = paths.keys.filter { it.endsWith("A") }.map { startNode ->
+        buildCycles(startNode, 0, emptyMap())
+    }.fold(listOf(NodeCycle(0, 1))) { results, cyclesForThisNode ->
+        results.flatMap { prevResult -> prevResult.joinWith(cyclesForThisNode) }
+    }.minOf { it.offset }
 
-    private tailrec fun buildCycle(current: String, idx: Int, nodes: Map<String, List<Int>>): CycleInfo {
+    private tailrec fun buildCycles(current: String, idx: Int, nodes: Map<String, List<Int>>): List<NodeCycle> {
         val knownNodes = nodes[current] ?: emptyList()
         val prevIndex = knownNodes.firstOrNull { (idx - it) % steps.size == 0 }
-        return if (prevIndex == null)
-            buildCycle(next(current, idx), idx + 1, nodes + (current to (knownNodes + idx)))
-        else
-            CycleInfo(nodes, idx - prevIndex)
+        if (prevIndex != null)
+            return nodes.values.toNodeCycles((idx - prevIndex).toLong())
+        val nextNodes = if (current.endsWith('Z')) nodes + (current to (knownNodes + idx)) else nodes
+        return buildCycles(next(current, idx), idx + 1, nextNodes)
     }
+
+    private fun Collection<List<Int>>.toNodeCycles(cycleLength: Long) =
+        flatMap { list -> list.toNodeCycles(cycleLength) }
+
+    private fun List<Int>.toNodeCycles(cycleLength: Long) = map { NodeCycle(it.toLong(), cycleLength) }
 }
 
 fun main() {
