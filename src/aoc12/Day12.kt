@@ -10,9 +10,7 @@ private const val SPR_WORKING = '.'
 data class SpringConfig(val s: String, val groups: List<Int>) {
     private val knownValues = mutableMapOf<Triple<Int, Int, Int>, Long>()
     private fun possibilities(idxS: Int, idxL: Int, groupRemainder: Int): Long =
-        knownValues[Triple(idxS, idxL, groupRemainder)] ?: calculatePossibilities(idxS, idxL, groupRemainder).also {
-            knownValues[Triple(idxS, idxL, groupRemainder)] = it
-        }
+        knownValues.getOrPut(Triple(idxS, idxL, groupRemainder)) { calculatePossibilities(idxS, idxL, groupRemainder) }
 
     private fun calculatePossibilities(idxS: Int, idxGroup: Int, groupRemainder: Int): Long {
         if (idxS >= s.length) return if (groupRemainder <= 0 && idxGroup == groups.size) 1 else 0
