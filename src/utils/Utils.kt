@@ -46,6 +46,16 @@ fun <T> List<T>.allPermutations(minLength: Int = 0, maxLength: Int = size): Sequ
     this.yieldAllPermutations(minLength, maxLength, this@allPermutations, mutableListOf<T>())
 }
 
+@JvmName("transposeStrings")
+fun List<String>.transpose(): List<String> = this[0].indices.map { this.column(it) }
+fun List<String>.column(c: Int): String = buildString {
+    this@column.forEach { s -> append(s[c]) }
+}
+
+@JvmName("transposeLists")
+fun <T> List<List<T>>.transpose(): List<List<T>> = this[0].indices.map { this.column(it) }
+fun <T> List<List<T>>.column(c: Int): List<T> = map { it[c] }
+
 private suspend fun <T> SequenceScope<List<T>>.yieldAllPermutations(
     minLength: Int, maxLength: Int,
     remainder: List<T>, currentPermutation: MutableList<T>

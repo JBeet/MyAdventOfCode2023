@@ -3,11 +3,12 @@ package aoc13
 import utils.chunkedBy
 import utils.println
 import utils.readInput
+import utils.transpose
 
 class MirrorPuzzle(private val parts: List<String>) {
     fun part1(): Int = findReflections().single()
 
-    private fun findReflections(): List<Int> = findByColumn() + findByRow().map { rowPoints(it) }
+    private fun findReflections(): List<Int> = findByRow().map { rowPoints(it) } + findByColumn()
     private fun rowPoints(it: Int) = it * 100
 
     fun part2() = parts.indices.flatMapTo(mutableSetOf()) { rowIdx ->
@@ -21,21 +22,14 @@ class MirrorPuzzle(private val parts: List<String>) {
     private fun String.swap(pos: Int) = take(pos) + swap(this[pos]) + drop(pos + 1)
     private fun swap(c: Char) = if (c == '.') '#' else '.'
 
-    private fun findByColumn(): List<Int> = (1..<parts[0].length).filter { reflectsByColumn(it) }
-    private fun reflectsByColumn(col: Int): Boolean = parts.all { lineReflectsByColumn(it, col) }
-
-    private fun lineReflectsByColumn(s: String, col: Int): Boolean =
-        if (col + col < s.length)
-            s.take(col) == s.drop(col).take(col).reversed()
-        else
-            s.take(col).drop(col + col - s.length) == s.drop(col).reversed()
-
     private fun findByRow(): List<Int> = (1..<parts.size).filter { reflectsByRow(it) }
     private fun reflectsByRow(row: Int): Boolean =
         if (row + row < parts.size)
             parts.take(row) == parts.drop(row).take(row).reversed()
         else
             parts.take(row).drop(row + row - parts.size) == parts.drop(row).reversed()
+
+    private fun findByColumn(): List<Int> = MirrorPuzzle(parts.transpose()).findByRow()
 }
 
 fun main() {
