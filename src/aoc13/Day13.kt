@@ -4,31 +4,25 @@ import utils.chunkedBy
 import utils.println
 import utils.readInput
 
-class MirrorPuzzle(private val parts: List<String>, private val rejected: Int = -1) {
-    fun part1(): Int = checkNotNull(findReflection()) { "No reflection found in $parts" }
+class MirrorPuzzle(private val parts: List<String>) {
+    fun part1(): Int = findReflections().single()
 
-    private fun findReflection(): Int? = findByColumn() ?: findByRow()?.let { rowPoints(it) }
+    private fun findReflections(): List<Int> = findByColumn() + findByRow().map { rowPoints(it) }
     private fun rowPoints(it: Int) = it * 100
 
-    fun part2(): Int {
-        val oldSolution = part1()
-        return parts.mapIndexedNotNull { rowIdx, part ->
-            part.indices.firstNotNullOfOrNull { colIdx ->
-                val newParts = parts.toMutableList()
-                newParts[rowIdx] = part.swap(colIdx)
-                MirrorPuzzle(newParts, oldSolution).findReflection()
-            }
-        }.first()
+    fun part2() = parts.indices.flatMapTo(mutableSetOf()) { rowIdx ->
+        parts[0].indices.flatMap { colIdx -> MirrorPuzzle(swap(rowIdx, colIdx)).findReflections() }
+    }.let { it - part1() }.single()
+
+    private fun swap(rowIdx: Int, colIdx: Int) = parts.toMutableList().apply {
+        this[rowIdx] = this[rowIdx].swap(colIdx)
     }
 
     private fun String.swap(pos: Int) = take(pos) + swap(this[pos]) + drop(pos + 1)
     private fun swap(c: Char) = if (c == '.') '#' else '.'
 
-    private fun findByColumn(): Int? =
-        (1..<parts[0].length).filter { it != rejected }.firstOrNull { reflectsByColumn(it) }
-
-    private fun reflectsByColumn(col: Int): Boolean =
-        parts.all { lineReflectsByColumn(it, col) }
+    private fun findByColumn(): List<Int> = (1..<parts[0].length).filter { reflectsByColumn(it) }
+    private fun reflectsByColumn(col: Int): Boolean = parts.all { lineReflectsByColumn(it, col) }
 
     private fun lineReflectsByColumn(s: String, col: Int): Boolean =
         if (col + col < s.length)
@@ -36,9 +30,7 @@ class MirrorPuzzle(private val parts: List<String>, private val rejected: Int = 
         else
             s.take(col).drop(col + col - s.length) == s.drop(col).reversed()
 
-    private fun findByRow(): Int? =
-        (1..<parts.size).filter { rowPoints(it) != rejected }.firstOrNull { reflectsByRow(it) }
-
+    private fun findByRow(): List<Int> = (1..<parts.size).filter { reflectsByRow(it) }
     private fun reflectsByRow(row: Int): Boolean =
         if (row + row < parts.size)
             parts.take(row) == parts.drop(row).take(row).reversed()
