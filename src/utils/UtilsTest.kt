@@ -23,7 +23,14 @@ fun main() {
     check(listOf(1, 2, 3, 4, 5).allPermutations(2, 4).count() == 25)
 
     assertEquals(listOf("147", "258", "369"), listOf("123", "456", "789").transpose())
-    assertEquals(listOf("147", "258", "369").map { it.toList() }, listOf("123", "456", "789").map { it.toList() }.transpose())
+    assertEquals(
+        listOf("147", "258", "369").map { it.toList() },
+        listOf("123", "456", "789").map { it.toList() }.transpose()
+    )
+
+    assertEquals(listOf(emptyList()), emptyList<Int>().split { it == 0 })
+    assertEquals(listOf("123", "456", "789").map { it.toList() }, "123 456 789".toList().split { it == ' ' })
+    assertEquals(listOf("123").map { it.toList() }, "123".toList().split { it == ' ' })
 }
 
 fun <T> assertEquals(expected: List<T>, actual: List<T>) {

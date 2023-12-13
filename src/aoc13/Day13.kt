@@ -1,41 +1,30 @@
 package aoc13
 
-import utils.chunkedBy
 import utils.println
 import utils.readInput
+import utils.split
 import utils.transpose
+import kotlin.math.min
 
-class MirrorPuzzle(private val parts: List<String>) {
-    fun part1(): Int = findReflections().single()
+class MirrorPuzzle(private val parts: List<String>, private val smudgeCount: Int = 0) {
+    fun part1(): Int = allReflections().single()
+    fun part2() = MirrorPuzzle(parts, 1).allReflections().let { it - part1() }.single()
 
-    private fun findReflections(): List<Int> = findByRow().map { rowPoints(it) } + findByColumn()
-    private fun rowPoints(it: Int) = it * 100
+    private fun allReflections(): List<Int> = findByRow().map { it * 100 } + findByColumn()
 
-    fun part2() = parts.indices.flatMapTo(mutableSetOf()) { rowIdx ->
-        parts[0].indices.flatMap { colIdx -> MirrorPuzzle(swap(rowIdx, colIdx)).findReflections() }
-    }.let { it - part1() }.single()
+    private fun findByRow(): List<Int> =
+        (1..<parts.size).filter { reflectsByRow(it, min(it, parts.size - it)) }
 
-    private fun swap(rowIdx: Int, colIdx: Int) = parts.toMutableList().apply {
-        this[rowIdx] = this[rowIdx].swap(colIdx)
-    }
+    private fun reflectsByRow(row: Int, size: Int): Boolean =
+        (0..<size).sumOf { diffCount(parts[row - 1 - it], parts[row + it]) } <= smudgeCount
 
-    private fun String.swap(pos: Int) = take(pos) + swap(this[pos]) + drop(pos + 1)
-    private fun swap(c: Char) = if (c == '.') '#' else '.'
+    private fun diffCount(a: String, b: String) = a.indices.count { a[it] != b[it] }
 
-    private fun findByRow(): List<Int> = (1..<parts.size).filter { reflectsByRow(it) }
-    private fun reflectsByRow(row: Int): Boolean =
-        if (row + row < parts.size)
-            parts.take(row) == parts.drop(row).take(row).reversed()
-        else
-            parts.take(row).drop(row + row - parts.size) == parts.drop(row).reversed()
-
-    private fun findByColumn(): List<Int> = MirrorPuzzle(parts.transpose()).findByRow()
+    private fun findByColumn() = MirrorPuzzle(parts.transpose(), smudgeCount).findByRow()
 }
 
 fun main() {
-    fun parse(input: List<String>) =
-        input.chunkedBy { it.isEmpty() }.filter { it != listOf("") }.map { MirrorPuzzle(it) }
-
+    fun parse(input: List<String>) = input.split { it.isEmpty() }.map { MirrorPuzzle(it) }
     fun part1(input: List<String>): Int = parse(input).sumOf { it.part1() }
     fun part2(input: List<String>): Int = parse(input).sumOf { it.part2() }
 

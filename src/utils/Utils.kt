@@ -66,13 +66,24 @@ private suspend fun <T> SequenceScope<List<T>>.yieldAllPermutations(
 
 @JvmName("transposeStrings")
 fun List<String>.transpose(): List<String> = this[0].indices.map { this.column(it) }
-fun List<String>.column(c: Int): String = buildString {
-    this@column.forEach { s -> append(s[c]) }
-}
+fun List<String>.column(c: Int): String = buildString { this@column.forEach { s -> append(s[c]) } }
 
 @JvmName("transposeLists")
 fun <T> List<List<T>>.transpose(): List<List<T>> = this[0].indices.map { this.column(it) }
 fun <T> List<List<T>>.column(c: Int): List<T> = map { it[c] }
+
+@JvmName("splitThis")
+fun <T> List<T>.split(predicate: (T) -> Boolean): List<List<T>> = split(this, predicate)
+
+@JvmName("split")
+private fun <T> split(src: List<T>, predicate: (T) -> Boolean): List<List<T>> = buildList {
+    var start = 0
+    src.indices.filter { predicate(src[it]) }.forEach { cur ->
+        add(src.subList(start, cur))
+        start = cur + 1
+    }
+    add(src.subList(start, src.size))
+}
 
 enum class AnsiColor(private val fg: Int, private val bg: Int) {
     BLACK(30, 40), RED(31, 41), GREEN(32, 42), YELLOW(33, 43), BLUE(34, 44),

@@ -2,6 +2,7 @@ package aoc05
 
 import utils.println
 import utils.readInput
+import utils.split
 import utils.splitToLongs
 
 fun main() {
@@ -64,14 +65,8 @@ fun main() {
         return Map(src, dest, lines.drop(1).map { Translation(it) }.sortedBy { it.sourceStart })
     }
 
-    fun parseMaps(input: List<String>): List<Map> = buildList {
-        var start = input.indexOf("")
-        while (start < input.size) {
-            val mapLines = input.drop(start + 1).takeWhile { it.isNotEmpty() }
-            add(Map(mapLines))
-            start += mapLines.size + 1
-        }
-    }
+    fun parseMaps(input: List<String>): List<Map> =
+        input.split { it.isEmpty() }.map { Map(it) }
 
     fun part1(input: List<String>): Long {
         val targetSeeds = (input[0]).removePrefix("seeds: ").splitToLongs()
