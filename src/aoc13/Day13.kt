@@ -6,27 +6,24 @@ import utils.split
 import utils.transpose
 import kotlin.math.min
 
-class MirrorPuzzle(private val parts: List<String>, private val smudgeCount: Int = 0) {
-    fun part1(): Int = allReflections().single()
-    fun part2() = MirrorPuzzle(parts, 1).allReflections().let { it - part1() }.single()
+class MirrorPuzzle(private val parts: List<String>, private val smudgeCount: Int) {
+    fun findReflection(): Int = findRow() * 100 + findColumn()
 
-    private fun allReflections(): List<Int> = findByRow().map { it * 100 } + findByColumn()
+    private fun findRow(): Int =
+        (1..<parts.size).singleOrNull { reflectsAtRow(it, min(it, parts.size - it)) } ?: 0
 
-    private fun findByRow(): List<Int> =
-        (1..<parts.size).filter { reflectsByRow(it, min(it, parts.size - it)) }
-
-    private fun reflectsByRow(row: Int, size: Int): Boolean =
-        (0..<size).sumOf { diffCount(parts[row - 1 - it], parts[row + it]) } <= smudgeCount
+    private fun reflectsAtRow(row: Int, size: Int): Boolean =
+        (0..<size).sumOf { diffCount(parts[row - 1 - it], parts[row + it]) } == smudgeCount
 
     private fun diffCount(a: String, b: String) = a.indices.count { a[it] != b[it] }
 
-    private fun findByColumn() = MirrorPuzzle(parts.transpose(), smudgeCount).findByRow()
+    private fun findColumn() = MirrorPuzzle(parts.transpose(), smudgeCount).findRow()
 }
 
 fun main() {
-    fun parse(input: List<String>) = input.split { it.isEmpty() }.map { MirrorPuzzle(it) }
-    fun part1(input: List<String>): Int = parse(input).sumOf { it.part1() }
-    fun part2(input: List<String>): Int = parse(input).sumOf { it.part2() }
+    fun split(input: List<String>) = input.split { it.isEmpty() }
+    fun part1(input: List<String>): Int = split(input).map { MirrorPuzzle(it, 0) }.sumOf { it.findReflection() }
+    fun part2(input: List<String>): Int = split(input).map { MirrorPuzzle(it, 1) }.sumOf { it.findReflection() }
 
 
     val testInput = readInput("aoc13/Day13_test")
