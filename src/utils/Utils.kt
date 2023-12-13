@@ -43,7 +43,25 @@ tailrec fun greatestCommonDivisor(a: Long, b: Long): Long {
 fun <T> List<T>.allPairs(): Sequence<Pair<T, T>> = allPermutations(2, 2).map { it[0] to it[1] }
 
 fun <T> List<T>.allPermutations(minLength: Int = 0, maxLength: Int = size): Sequence<List<T>> = sequence {
+    check(minLength <= maxLength) { "minLength ($minLength) > maxLength ($maxLength)" }
+    check(minLength >= 0) { "minLength ($minLength) < 0" }
+    check(minLength <= size) { "minLength ($minLength) > size ($size)" }
     this.yieldAllPermutations(minLength, maxLength, this@allPermutations, mutableListOf<T>())
+}
+
+private suspend fun <T> SequenceScope<List<T>>.yieldAllPermutations(
+    minLength: Int, maxLength: Int, remainder: List<T>, currentPermutation: MutableList<T>
+) {
+    if (maxLength == 0 || remainder.isEmpty())
+        yield(currentPermutation.toList())
+    else {
+        val tail = remainder.subList(1, remainder.size)
+        currentPermutation += remainder[0]
+        yieldAllPermutations(minLength - 1, maxLength - 1, tail, currentPermutation)
+        currentPermutation.removeLast()
+        if (minLength < remainder.size)
+            yieldAllPermutations(minLength, maxLength, tail, currentPermutation)
+    }
 }
 
 @JvmName("transposeStrings")
@@ -55,23 +73,6 @@ fun List<String>.column(c: Int): String = buildString {
 @JvmName("transposeLists")
 fun <T> List<List<T>>.transpose(): List<List<T>> = this[0].indices.map { this.column(it) }
 fun <T> List<List<T>>.column(c: Int): List<T> = map { it[c] }
-
-private suspend fun <T> SequenceScope<List<T>>.yieldAllPermutations(
-    minLength: Int, maxLength: Int,
-    remainder: List<T>, currentPermutation: MutableList<T>
-) {
-    if (maxLength >= 0 && minLength <= remainder.size)
-        if (remainder.isEmpty() || maxLength == 0)
-            yield(currentPermutation.toList())
-        else {
-            val head = remainder[0]
-            val tail = remainder.subList(1, remainder.size)
-            currentPermutation += head
-            yieldAllPermutations(minLength - 1, maxLength - 1, tail, currentPermutation)
-            currentPermutation.removeLast()
-            yieldAllPermutations(minLength, maxLength, tail, currentPermutation)
-        }
-}
 
 enum class AnsiColor(private val fg: Int, private val bg: Int) {
     BLACK(30, 40), RED(31, 41), GREEN(32, 42), YELLOW(33, 43), BLUE(34, 44),
