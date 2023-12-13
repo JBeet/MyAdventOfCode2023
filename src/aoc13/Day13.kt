@@ -7,30 +7,22 @@ import utils.readInput
 class MirrorPuzzle(private val parts: List<String>, private val rejected: Int = -1) {
     fun part1(): Int = checkNotNull(findReflection()) { "No reflection found in $parts" }
 
-    private fun findReflection(): Int? {
-        val byColumn = findByColumn()
-        if (byColumn != null) return byColumn
-        val byRow = findByRow()
-        if (byRow != null) return byRow * 100
-        return null
-    }
+    private fun findReflection(): Int? = findByColumn() ?: findByRow()?.let { rowPoints(it) }
+    private fun rowPoints(it: Int) = it * 100
 
     fun part2(): Int {
         val oldSolution = part1()
-        val newParts = parts.toMutableList()
-        return parts.asSequence().mapIndexedNotNull { rowIdx, part ->
+        return parts.mapIndexedNotNull { rowIdx, part ->
             part.indices.firstNotNullOfOrNull { colIdx ->
-                newParts[rowIdx] = StringBuilder(part).swap(colIdx).toString()
+                val newParts = parts.toMutableList()
+                newParts[rowIdx] = part.swap(colIdx)
                 MirrorPuzzle(newParts, oldSolution).findReflection()
-            }.also {
-                newParts[rowIdx] = part
             }
         }.first()
     }
 
-    private fun StringBuilder.swap(pos: Int): CharSequence = apply {
-        this[pos] = if (this[pos] == '.') '#' else '.'
-    }
+    private fun String.swap(pos: Int) = take(pos) + swap(this[pos]) + drop(pos + 1)
+    private fun swap(c: Char) = if (c == '.') '#' else '.'
 
     private fun findByColumn(): Int? =
         (1..<parts[0].length).filter { it != rejected }.firstOrNull { reflectsByColumn(it) }
@@ -45,7 +37,7 @@ class MirrorPuzzle(private val parts: List<String>, private val rejected: Int = 
             s.take(col).drop(col + col - s.length) == s.drop(col).reversed()
 
     private fun findByRow(): Int? =
-        (1..<parts.size).filter { it * 100 != rejected }.firstOrNull { reflectsByRow(it) }
+        (1..<parts.size).filter { rowPoints(it) != rejected }.firstOrNull { reflectsByRow(it) }
 
     private fun reflectsByRow(row: Int): Boolean =
         if (row + row < parts.size)
