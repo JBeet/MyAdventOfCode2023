@@ -33,7 +33,7 @@ fun main() {
     assertEquals(listOf("123").map { it.toList() }, "123".toList().split { it == ' ' })
 }
 
-fun <T> assertEquals(expected: List<T>, actual: List<T>) {
+fun <T> assertEquals(expected: T, actual: T) {
     check(expected == actual) { "Expected $expected but got $actual" }
 }
 

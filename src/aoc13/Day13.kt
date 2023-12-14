@@ -25,7 +25,6 @@ fun main() {
     fun part1(input: List<String>): Int = split(input).map { MirrorPuzzle(it, 0) }.sumOf { it.findReflection() }
     fun part2(input: List<String>): Int = split(input).map { MirrorPuzzle(it, 1) }.sumOf { it.findReflection() }
 
-
     val testInput = readInput("aoc13/Day13_test")
     check(part1(testInput) == 405)
     val input = readInput("aoc13/Day13")

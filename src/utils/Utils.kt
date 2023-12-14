@@ -28,7 +28,7 @@ fun <T> T.show(context: String? = null): T = also {
 fun Int.println() = show()
 fun Long.println() = show()
 
-fun String.splitOnSpaces() = split(' ').filter { it.isNotBlank() }
+fun String.splitOnSpaces() = split(' ').notBlank()
 fun String.splitToInts() = splitOnSpaces().map { it.toInt() }
 fun String.splitToLongs() = splitOnSpaces().map { it.toLong() }
 fun List<String>.notBlank() = filter { it.isNotBlank() }
@@ -76,14 +76,10 @@ fun <T> List<List<T>>.column(c: Int): List<T> = map { it[c] }
 fun <T> List<T>.split(predicate: (T) -> Boolean): List<List<T>> = split(this, predicate)
 
 @JvmName("split")
-private fun <T> split(src: List<T>, predicate: (T) -> Boolean): List<List<T>> = buildList {
-    var start = 0
-    src.indices.filter { predicate(src[it]) }.forEach { cur ->
-        add(src.subList(start, cur))
-        start = cur + 1
+private fun <T> split(src: List<T>, predicate: (T) -> Boolean): List<List<T>> =
+    (listOf(-1) + src.indices.filter { predicate(src[it]) } + src.size).zipWithNext { prev, cur ->
+        src.subList(prev + 1, cur)
     }
-    add(src.subList(start, src.size))
-}
 
 enum class AnsiColor(private val fg: Int, private val bg: Int) {
     BLACK(30, 40), RED(31, 41), GREEN(32, 42), YELLOW(33, 43), BLUE(34, 44),

@@ -1,9 +1,13 @@
 package aoc10
 
 import utils.*
+import utils.grid.Direction
+import utils.grid.FilledGrid
+import utils.grid.GridCell
+import utils.grid.Position
 
 sealed interface MetalCell : GridCell {
-    data class MPipe(override val connections: Set<Direction>) : MetalCell
+    data class MPipe(override val directions: Set<Direction>) : MetalCell
     data object MEmpty : MetalCell {
         override fun toString(): String = "."
     }
@@ -16,28 +20,23 @@ sealed interface MetalCell : GridCell {
 fun main() {
     class MetalGrid(lines: List<List<MetalCell>>) : FilledGrid<MetalCell>(lines, MetalCell.MEmpty) {
         private val distances: Map<Position, Int> by lazy {
-            val target = mutableMapOf<Position, Int>()
-            val startPos = findAll(MetalCell.MAnimal).single()
-            foldConnected(startPos, 0) { position, distance ->
-                val oldValue = target[position]
-                if (oldValue != null && oldValue < distance) return@foldConnected null
-                target[position] = distance
-                return@foldConnected distance + 1
-            }
-            target
+            traverse(object : TraverseConnections<Int>(findAll(MetalCell.MAnimal).single(), 0) {
+                override fun shouldUpdate(pos: Position, oldValue: Int, curValue: Int): Boolean = oldValue > curValue
+                override fun calculateNextValue(pos: Position, oldValue: Int): Int = oldValue + 1
+            })
         }
 
-        override fun connections(pos: Position, cell: MetalCell) = if (cell == MetalCell.MAnimal)
-            Direction.entries.filter { it.inverse in connections(pos + it.delta) }
+        override fun directions(pos: Position, cell: MetalCell) = if (cell == MetalCell.MAnimal)
+            Direction.entries.filter { it.inverse in cell(pos + it.delta).directions }
         else
-            super.connections(pos, cell)
+            cell.directions
 
         fun findMaxDistance(): Int = distances.values.max()
         fun countInside(): Int = countWithEmpty { pos -> isInsideLoop(pos) }
         private fun isInsideLoop(pos: Position) = (!isPartOfLoop(pos)) && (countCrossings(pos) % 2 == 1)
         private fun isPartOfLoop(pos: Position) = pos in distances.keys
         private fun countCrossings(pos: Position) =
-            pos.rowBefore.count { isPartOfLoop(it) && Direction.S in connections(it) }
+            pos.rowBefore.count { isPartOfLoop(it) && Direction.S in directions(it, cell(it)) }
 
         override fun cellAsString(pos: Position, cell: MetalCell) =
             if (cell == MetalCell.MAnimal) cell.toString() else super.cellAsString(pos, cell)
