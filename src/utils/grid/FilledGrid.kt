@@ -46,10 +46,15 @@ open class FilledGrid<C>(
 
     private inner class ColumnGridLine(private val columnIndex: Int) : GridLine<C> {
         private val size: Int = height.toInt()
+        private val rowRange = 0..<size
         override val index: Long = columnIndex.toLong()
-        override val isEmpty: Boolean by lazy { (0..size).all { cell(it) == empty } }
+        override val isEmpty: Boolean by lazy { rowRange.all { cell(it) == empty } }
         override fun cell(idx: Long): C = cell(idx.toInt())
-        private fun cell(idx: Int): C = if (idx in 0..<size) cells[idx][columnIndex] else empty
+        private fun cell(idx: Int): C = if (idx in rowRange) cells[idx][columnIndex] else empty
+        override fun findAll(predicate: (C) -> Boolean): Map<Long, C> = rowRange.mapNotNull { row ->
+            val cell = cells[row][columnIndex]
+            if (predicate(cell)) (row.toLong() to cell) else null
+        }.toMap()
     }
 
     override fun findAll(predicate: (C) -> Boolean): Map<Position, C> = buildMap {
@@ -89,9 +94,14 @@ open class FilledGrid<C>(
 private data class GridList<C>(override val index: Long, private val cells: List<C>, private val empty: C) :
     GridLine<C> {
     private val size: Int = cells.size
+    private val columnRange = 0..<size
     override val isEmpty: Boolean get() = cells.all { it == empty }
     override fun cell(idx: Long): C = cell(idx.toInt())
-    fun cell(idx: Int): C = if (idx in 0..<size) cells[idx] else empty
+    fun cell(idx: Int): C = if (idx in columnRange) cells[idx] else empty
+
+    override fun findAll(predicate: (C) -> Boolean): Map<Long, C> = cells.mapIndexedNotNull { idx, cell ->
+        if (predicate(cell)) (idx.toLong() to cell) else null
+    }.toMap()
 
     override fun toString(): String = cells.joinToString("")
 }

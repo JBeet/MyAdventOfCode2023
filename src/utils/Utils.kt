@@ -77,9 +77,15 @@ fun <T> List<T>.split(predicate: (T) -> Boolean): List<List<T>> = split(this, pr
 
 @JvmName("split")
 private fun <T> split(src: List<T>, predicate: (T) -> Boolean): List<List<T>> =
-    (listOf(-1) + src.indices.filter { predicate(src[it]) } + src.size).zipWithNext { prev, cur ->
+    src.indices.filter { predicate(src[it]) }.processIntervals(src.size) { prev, cur ->
         src.subList(prev + 1, cur)
     }
+
+fun <T> List<Int>.processIntervals(max: Int, transform: (fromExclusive: Int, toExclusive: Int) -> List<T>) =
+    (listOf(-1) + this + max).zipWithNext(transform)
+
+fun <T> List<Long>.processIntervals(max: Long, transform: (fromExclusive: Long, toExclusive: Long) -> List<T>) =
+    (listOf(-1L) + this + max).zipWithNext(transform)
 
 enum class AnsiColor(private val fg: Int, private val bg: Int) {
     BLACK(30, 40), RED(31, 41), GREEN(32, 42), YELLOW(33, 43), BLUE(34, 44),

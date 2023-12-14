@@ -22,9 +22,12 @@ interface GridLine<C> {
     val isEmpty: Boolean
     fun cell(idx: Long): C
     fun toList(size: Long) = (0..<size).map { cell(it) }
+    fun findAll(value: C): Set<Long> = findAll { cell -> cell == value }.keys
+    fun findAll(predicate: (C) -> Boolean): Map<Long, C>
 }
 
 data class EmptyLine<C>(override val index: Long, private val empty: C) : GridLine<C> {
     override val isEmpty: Boolean get() = true
     override fun cell(idx: Long): C = empty
+    override fun findAll(predicate: (C) -> Boolean): Map<Long, C> = emptyMap()
 }

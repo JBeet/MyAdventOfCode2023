@@ -28,6 +28,8 @@ open class OpenCharGrid(cells: Map<Position, Char>, final override val bounds: Z
     override fun transpose() = OpenCharGrid(transposeCells(), bounds, empty)
     open fun rotate90() = OpenCharGrid(rotateCells90(), bounds.swap(), empty)
     fun rotateCells90(): Map<Position, Char> = rotateCells90(height)
+    fun rotateCells180(): Map<Position, Char> = rotateCells180(height, width)
+    fun rotateCells270(): Map<Position, Char> = rotateCells270(width)
 }
 
 open class OpenGrid<C>(
@@ -43,12 +45,23 @@ open class OpenGrid<C>(
     val rows get() = bounds.rowRange.asSequence().map { row(it) }
     val columns get() = bounds.columnRange.asSequence().map { column(it) }
 
+    private val cellsByRow: Map<Long, Map<Long, C>> by lazy {
+        cells.entries.groupBy { it.key.row }.mapValues { (_, list) ->
+            list.associate { it.key.column to it.value }
+        }
+    }
+    private val cellsByColumn by lazy {
+        cells.entries.groupBy { it.key.column }.mapValues { (_, list) ->
+            list.associate { it.key.row to it.value }
+        }
+    }
+
     override fun row(r: Long): GridLine<C> =
-        if (bounds.hasRow(r)) OpenGridLine(r, cells.filterKeys { it.row == r }.mapKeys { it.key.column }, empty)
+        if (bounds.hasRow(r)) OpenGridLine(r, cellsByRow[r] ?: emptyMap(), empty)
         else EmptyLine(r, empty)
 
     override fun column(c: Long) =
-        if (bounds.hasColumn(c)) OpenGridLine(c, cells.filterKeys { it.column == c }.mapKeys { it.key.row }, empty)
+        if (bounds.hasColumn(c)) OpenGridLine(c, cellsByColumn[c] ?: emptyMap(), empty)
         else EmptyLine(c, empty)
 
     override fun cell(p: Position) = cells[p] ?: empty
@@ -63,6 +76,10 @@ open class OpenGrid<C>(
     override fun transpose() = OpenGrid(transposeCells(), empty)
     fun transposeCells(): Map<Position, C> = cells.mapKeys { (pos, _) -> pos.transpose() }
     fun rotateCells90(height: Long): Map<Position, C> = cells.mapKeys { (pos, _) -> pos.rotate90(height) }
+    fun rotateCells180(height: Long, width: Long): Map<Position, C> =
+        cells.mapKeys { (pos, _) -> pos.rotate180(height, width) }
+
+    fun rotateCells270(width: Long): Map<Position, C> = cells.mapKeys { (pos, _) -> pos.rotate270(width) }
 
     override fun toString() = buildString {
         bounds.rowRange.forEach { rowIndex ->
@@ -79,4 +96,5 @@ private data class OpenGridLine<C>(override val index: Long, private val cells: 
     GridLine<C> {
     override val isEmpty: Boolean get() = cells.all { it == empty }
     override fun cell(idx: Long): C = cells[idx] ?: empty
+    override fun findAll(predicate: (C) -> Boolean): Map<Long, C> = cells.filterValues(predicate)
 }

@@ -2,7 +2,7 @@ package utils.grid
 
 abstract class AbstractGrid<C>(protected open val bounds: Bounds) : Grid<C> {
     fun connections(pos: Position) = connections(pos, cell(pos))
-    fun connections(pos: Position, cell: C): Iterable<Position> = directions(pos, cell).map { pos + it.delta }
+    open fun connections(pos: Position, cell: C): Iterable<Position> = directions(pos, cell).map { pos + it.delta }
     open fun directions(pos: Position, cell: C): Collection<Direction> =
         if (cell is GridCell) cell.directions else emptySet()
 
