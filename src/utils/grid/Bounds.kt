@@ -28,4 +28,5 @@ data class ZeroBasedBounds(val height: Long, val width: Long) : Bounds {
     override val columnRange: LongRange = (0..<width)
     override fun hasRow(r: Long): Boolean = r in rowRange
     override fun hasColumn(c: Long): Boolean = c in columnRange
+    fun swap(): ZeroBasedBounds = ZeroBasedBounds(width, height)
 }

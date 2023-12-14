@@ -17,6 +17,7 @@ data class Position(val row: Long, val column: Long) {
     operator fun times(f: Long) = Position(row * f, column * f)
     fun manhattanDistanceTo(o: Position) = abs(row - o.row) + abs(column - o.column)
     fun transpose(): Position = Position(column, row)
+    fun rotate90(height: Long) = Position(column, height - 1 - row)
 
     override fun toString(): String = "($row,$column)"
 

@@ -7,18 +7,21 @@ fun filledCharCells(input: List<String>) = input.map { it.toList() }
 
 open class FilledCharGrid(cells: List<List<Char>>, empty: Char = '.') : FilledGrid<Char>(cells, empty) {
     constructor(input: List<String>) : this(filledCharCells(input))
+
+    override fun transpose() = FilledCharGrid(cells.transpose(), empty)
+    override fun rotate90() = FilledCharGrid(rotateCells90(), empty)
 }
 
 open class FilledGrid<C>(
-    private val cells: List<List<C>>,
-    private val empty: C,
-    private val zeroBasedBounds: ZeroBasedBounds = ZeroBasedBounds(cells.size, cells[0].size)
-) : AbstractGrid<C>(zeroBasedBounds) {
-    val height = zeroBasedBounds.height
-    val width = zeroBasedBounds.width
+    protected val cells: List<List<C>>,
+    protected val empty: C,
+    final override val bounds: ZeroBasedBounds = ZeroBasedBounds(cells.size, cells[0].size)
+) : AbstractGrid<C>(bounds) {
+    val height = bounds.height
+    val width = bounds.width
 
     init {
-        check(cells.all { it.size.toLong() == width }) { "expected length ${zeroBasedBounds.width}" }
+        check(cells.all { it.size.toLong() == width }) { "expected length $width" }
     }
 
     operator fun contains(p: Position) = p in bounds
@@ -42,7 +45,7 @@ open class FilledGrid<C>(
     override fun cell(r: Long, c: Long) = cell(r.toInt(), c.toInt())
 
     private inner class ColumnGridLine(private val columnIndex: Int) : GridLine<C> {
-        private val size: Int = zeroBasedBounds.height.toInt()
+        private val size: Int = height.toInt()
         override val index: Long = columnIndex.toLong()
         override val isEmpty: Boolean by lazy { (0..size).all { cell(it) == empty } }
         override fun cell(idx: Long): C = cell(idx.toInt())
@@ -61,6 +64,8 @@ open class FilledGrid<C>(
     override fun countNonEmpty(predicate: (Position) -> Boolean) = countWithEmpty { cell(it) != empty && predicate(it) }
 
     override fun transpose() = FilledGrid(cells.transpose(), empty)
+    open fun rotate90() = FilledGrid(rotateCells90(), empty, bounds.swap())
+    fun rotateCells90() = columns.mapTo(mutableListOf()) { it.toList(height).reversed() }
 
     open fun bgColor(pos: Position): AnsiColor = AnsiColor.DEFAULT
     open fun fgColor(pos: Position): AnsiColor = AnsiColor.DEFAULT

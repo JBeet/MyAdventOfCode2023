@@ -1,14 +1,13 @@
 package aoc14
 
-import utils.*
 import utils.grid.*
+import utils.println
+import utils.readInput
 
 private const val CUBE = '#'
 private const val ROUND = 'O'
 
 class Rocks(rocks: Map<Position, Char>, bounds: ZeroBasedBounds) : OpenCharGrid(rocks, bounds) {
-    private val height = bounds.height
-
     fun part1() = moveAll(Direction.N).load()
 
     private fun moveAll(direction: Direction): Rocks {
@@ -25,10 +24,7 @@ class Rocks(rocks: Map<Position, Char>, bounds: ZeroBasedBounds) : OpenCharGrid(
             } while (moreFixed.isNotEmpty())
             flexRocks = flexRocks.mapTo(mutableSetOf()) { it + direction }
         }
-        return Rocks(
-            rocks = cubes.associateWith { CUBE } + (fixedRocks - cubes).associateWith { ROUND },
-            zeroBasedBounds
-        )
+        return Rocks(rocks = cubes.associateWith { CUBE } + (fixedRocks - cubes).associateWith { ROUND }, bounds)
     }
 
     private fun load(): Long = findAll(ROUND).sumOf { height - it.row }

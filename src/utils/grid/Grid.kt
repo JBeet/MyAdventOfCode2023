@@ -21,6 +21,7 @@ interface GridLine<C> {
     val index: Long
     val isEmpty: Boolean
     fun cell(idx: Long): C
+    fun toList(size: Long) = (0..<size).map { cell(it) }
 }
 
 data class EmptyLine<C>(override val index: Long, private val empty: C) : GridLine<C> {

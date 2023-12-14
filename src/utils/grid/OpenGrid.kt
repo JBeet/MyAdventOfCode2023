@@ -21,11 +21,17 @@ fun <T, R : Any> parseCellMap(input: List<List<T>>, cellConstruction: (T) -> R?)
 fun openCharCells(input: List<String>, empty: Char = '.') = parseCellMap(input) { it.takeUnless { it == empty } }
 fun boundsFrom(input: List<String>) = ZeroBasedBounds(input.size, input[0].length)
 
-open class OpenCharGrid(cells: Map<Position, Char>, protected val zeroBasedBounds: ZeroBasedBounds, empty: Char = '.') :
-    OpenGrid<Char>(cells, empty, zeroBasedBounds)
+open class OpenCharGrid(cells: Map<Position, Char>, final override val bounds: ZeroBasedBounds, empty: Char = '.') :
+    OpenGrid<Char>(cells, empty, bounds) {
+    val height = bounds.height
+    val width = bounds.width
+    override fun transpose() = OpenCharGrid(transposeCells(), bounds, empty)
+    open fun rotate90() = OpenCharGrid(rotateCells90(), bounds.swap(), empty)
+    fun rotateCells90(): Map<Position, Char> = rotateCells90(height)
+}
 
 open class OpenGrid<C>(
-    val cells: Map<Position, C>, private val empty: C, bounds: Bounds = DetectBounds(cells.keys)
+    val cells: Map<Position, C>, protected val empty: C, bounds: Bounds = DetectBounds(cells.keys)
 ) : AbstractGrid<C>(bounds) {
     constructor(cells: List<List<C>>, empty: C) : this(cells.flatMapIndexed { rowIndex: Int, rowData: List<C> ->
         rowData.mapIndexedNotNull { colIndex, c -> if (c == empty) null else (Position(rowIndex, colIndex) to c) }
@@ -56,6 +62,7 @@ open class OpenGrid<C>(
 
     override fun transpose() = OpenGrid(transposeCells(), empty)
     fun transposeCells(): Map<Position, C> = cells.mapKeys { (pos, _) -> pos.transpose() }
+    fun rotateCells90(height: Long): Map<Position, C> = cells.mapKeys { (pos, _) -> pos.rotate90(height) }
 
     override fun toString() = buildString {
         bounds.rowRange.forEach { rowIndex ->
