@@ -1,10 +1,7 @@
 package aoc10
 
 import utils.*
-import utils.grid.Direction
-import utils.grid.FilledGrid
-import utils.grid.GridCell
-import utils.grid.Position
+import utils.grid.*
 
 sealed interface MetalCell : GridCell {
     data class MPipe(override val directions: Set<Direction>) : MetalCell
@@ -26,8 +23,8 @@ fun main() {
             })
         }
 
-        override fun directions(pos: Position, cell: MetalCell) = if (cell == MetalCell.MAnimal)
-            Direction.entries.filter { it.inverse in cell(pos + it.delta).directions }
+        override fun deltas(pos: Position, cell: MetalCell) = if (cell == MetalCell.MAnimal)
+            Direction.entries.filter { -it in cell(pos + it.delta).directions }
         else
             cell.directions
 
@@ -36,7 +33,7 @@ fun main() {
         private fun isInsideLoop(pos: Position) = (!isPartOfLoop(pos)) && (countCrossings(pos) % 2 == 1)
         private fun isPartOfLoop(pos: Position) = pos in distances.keys
         private fun countCrossings(pos: Position) =
-            pos.rowBefore.count { isPartOfLoop(it) && Direction.S in directions(it, cell(it)) }
+            pos.rowBefore.count { isPartOfLoop(it) && Direction.S in deltas(it, cell(it)) }
 
         override fun cellAsString(pos: Position, cell: MetalCell) =
             if (cell == MetalCell.MAnimal) cell.toString() else super.cellAsString(pos, cell)
@@ -50,12 +47,12 @@ fun main() {
     }
 
     fun parseChar(ch: Char): MetalCell = when (ch) {
-        'F' -> MetalCell.MPipe(setOf(Direction.E, Direction.S))
-        '7' -> MetalCell.MPipe(setOf(Direction.W, Direction.S))
-        'L' -> MetalCell.MPipe(setOf(Direction.E, Direction.N))
-        'J' -> MetalCell.MPipe(setOf(Direction.W, Direction.N))
-        '|' -> MetalCell.MPipe(setOf(Direction.N, Direction.S))
-        '-' -> MetalCell.MPipe(setOf(Direction.E, Direction.W))
+        'F' -> MetalCell.MPipe(directions("ES"))
+        '7' -> MetalCell.MPipe(directions("WS"))
+        'L' -> MetalCell.MPipe(directions("EN"))
+        'J' -> MetalCell.MPipe(directions("WN"))
+        '|' -> MetalCell.MPipe(directions("NS"))
+        '-' -> MetalCell.MPipe(directions("EW"))
         '.' -> MetalCell.MEmpty
         'S' -> MetalCell.MAnimal
         else -> error("Unknown character: $ch")

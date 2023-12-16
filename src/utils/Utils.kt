@@ -4,6 +4,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.io.path.Path
 import kotlin.io.path.readLines
+import kotlin.time.measureTime
 
 /**
  * Reads lines from the given input txt file.
@@ -93,4 +94,12 @@ enum class AnsiColor(private val fg: Int, private val bg: Int) {
 
     fun fgCode(): String = "\u001b[${fg}m"
     fun bgCode(): String = "\u001b[${bg}m"
+}
+
+fun <T> timed(block: () -> T): T {
+    val result: T
+    println(measureTime {
+        result = block()
+    })
+    return result
 }

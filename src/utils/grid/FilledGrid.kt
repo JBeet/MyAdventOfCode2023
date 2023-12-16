@@ -24,8 +24,6 @@ open class FilledGrid<C>(
         check(cells.all { it.size.toLong() == width }) { "expected length $width" }
     }
 
-    operator fun contains(p: Position) = p in bounds
-
     val rows get() = bounds.rowRange.asSequence().map { row(it) }
     val columns get() = bounds.columnRange.asSequence().map { column(it) }
     val nonEmptyCells

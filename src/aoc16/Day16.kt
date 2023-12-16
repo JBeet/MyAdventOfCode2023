@@ -1,21 +1,53 @@
 package aoc16
 
 import utils.assertEquals
-import utils.grid.Direction
-import utils.grid.FilledCharGrid
-import utils.grid.Position
+import utils.grid.*
 import utils.println
 import utils.readInput
 
-const val EMPTY = '.'
-const val MIRROR_RU = '/'
-const val MIRROR_RD = '\\'
-const val SPLIT_UD = '|'
-const val SPLIT_LR = '-'
+enum class LavaCell(val ch: Char) {
+    EMPTY('.') {
+        override fun outgoing(incoming: Direction): Directions = setOf(incoming)
+    },
+    MIRROR_RU('/') {
+        override fun outgoing(incoming: Direction): Directions = when (incoming) {
+            Direction.N -> directions("E")
+            Direction.E -> directions("N")
+            Direction.S -> directions("W")
+            Direction.W -> directions("S")
+        }
+    },
+    MIRROR_RD('\\') {
+        override fun outgoing(incoming: Direction): Directions = when (incoming) {
+            Direction.N -> directions("W")
+            Direction.E -> directions("S")
+            Direction.S -> directions("E")
+            Direction.W -> directions("N")
+        }
+    },
+    SPLIT_UD('|') {
+        override fun outgoing(incoming: Direction): Directions = when (incoming) {
+            Direction.N -> directions("N")
+            Direction.E -> directions("NS")
+            Direction.S -> directions("S")
+            Direction.W -> directions("NS")
+        }
+    },
+    SPLIT_LR('-') {
+        override fun outgoing(incoming: Direction): Directions = when (incoming) {
+            Direction.N -> directions("EW")
+            Direction.E -> directions("E")
+            Direction.S -> directions("EW")
+            Direction.W -> directions("W")
+        }
+    };
 
-typealias Directions = Set<Direction>
+    abstract fun outgoing(incoming: Direction): Directions
+}
 
-class LavaCave(input: List<String>) : FilledCharGrid(input) {
+fun parse(ch: Char) = LavaCell.entries.first { it.ch == ch }
+
+class LavaCave(input: List<String>) : FilledGrid<LavaCell>(input.map { it.map { parse(it) } }, LavaCell.EMPTY) {
     private fun calculateIncomingBeans(
         initialPosition: Position,
         initialDirection: Direction
@@ -25,56 +57,13 @@ class LavaCave(input: List<String>) : FilledCharGrid(input) {
             if (pos !in this@LavaCave) return@DeepRecursiveFunction
             val known = result[pos] ?: emptySet()
             if (curDir in known) return@DeepRecursiveFunction
-            result[pos] = (result[pos] ?: emptySet()) + curDir
-            val cell = cell(pos)
-            val outgoing = outgoing(cell, curDir)
-            outgoing.forEach { newDir ->
+            result[pos] = known + curDir
+            cell(pos).outgoing(curDir).forEach { newDir ->
                 callRecursive((pos + newDir) to newDir)
             }
         }
         traverse(initialPosition to initialDirection)
         return result
-    }
-
-    private fun outgoing(cell: Char, incoming: Direction): Set<Direction> = when (cell) {
-        empty -> setOf(incoming)
-        MIRROR_RU -> setOf(
-            when (incoming) {
-                Direction.N -> Direction.E
-                Direction.E -> Direction.N
-                Direction.S -> Direction.W
-                Direction.W -> Direction.S
-                else -> error("unknown direction: $incoming")
-            }
-        )
-
-        MIRROR_RD -> setOf(
-            when (incoming) {
-                Direction.N -> Direction.W
-                Direction.E -> Direction.S
-                Direction.S -> Direction.E
-                Direction.W -> Direction.N
-                else -> error("unknown direction: $incoming")
-            }
-        )
-
-        SPLIT_UD -> when (incoming) {
-            Direction.N -> setOf(Direction.N)
-            Direction.E -> setOf(Direction.N, Direction.S)
-            Direction.S -> setOf(Direction.S)
-            Direction.W -> setOf(Direction.N, Direction.S)
-            else -> error("unknown direction: $incoming")
-        }
-
-        SPLIT_LR -> when (incoming) {
-            Direction.N -> setOf(Direction.E, Direction.W)
-            Direction.E -> setOf(Direction.E)
-            Direction.S -> setOf(Direction.E, Direction.W)
-            Direction.W -> setOf(Direction.W)
-            else -> error("unknown direction: $incoming")
-        }
-
-        else -> error("unknown: $cell")
     }
 
     fun part1(): Int = calculateEnergized(Position(0, 0), Direction.E)

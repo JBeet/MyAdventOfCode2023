@@ -9,9 +9,9 @@ data class Position(val row: Long, val column: Long) {
     val columnBefore: Sequence<Position> = (0..<row).asSequence().map { Position(it, column) }
 
     operator fun plus(term: Position) = Position(row + term.row, column + term.column)
-    operator fun plus(direction: Direction): Position = this + direction.delta
+    operator fun plus(term: Delta): Position = this + term.delta
     operator fun minus(term: Position) = Position(row - term.row, column - term.column)
-    operator fun minus(direction: Direction): Position = this + direction.delta
+    operator fun minus(term: Delta): Position = this - term.delta
     operator fun unaryMinus() = Position(-row, -column)
     operator fun times(f: Int) = times(f.toLong())
     operator fun times(f: Long) = Position(row * f, column * f)
@@ -31,19 +31,39 @@ data class Position(val row: Long, val column: Long) {
 operator fun Int.times(f: Position) = f * toLong()
 operator fun Long.times(f: Position) = f * this
 
-enum class Direction(val delta: Position) {
+interface Delta {
+    val delta: Position
+    operator fun unaryMinus(): Delta
+}
+
+enum class Direction(override val delta: Position) : Delta {
+    N(Position(-1, 0)), E(Position(0, +1)), S(Position(+1, 0)), W(Position(0, -1));
+
+    override fun unaryMinus(): Direction = when (this) {
+        N -> S
+        E -> W
+        S -> N
+        W -> E
+    }
+}
+
+typealias Directions = Set<Direction>
+
+fun directions(s: String): Directions = s.mapTo(mutableSetOf()) { direction(it) }
+fun direction(ch: Char) = Direction.valueOf(ch.toString())
+
+enum class Direction8(override val delta: Position) : Delta {
     N(Position(-1, 0)), E(Position(0, +1)), S(Position(+1, 0)), W(Position(0, -1)),
     NE(Position(-1, +1)), SE(Position(+1, +1)), NW(Position(-1, -1)), SW(Position(+1, -1));
 
-    val inverse: Direction
-        get() = when (this) {
-            N -> S
-            E -> W
-            S -> N
-            W -> E
-            NE -> SW
-            SE -> NW
-            NW -> SE
-            SW -> NE
-        }
+    override fun unaryMinus(): Direction8 = when (this) {
+        N -> S
+        E -> W
+        S -> N
+        W -> E
+        NE -> SW
+        SE -> NW
+        NW -> SE
+        SW -> NE
+    }
 }

@@ -14,7 +14,7 @@ interface Grid<C> {
 }
 
 interface GridCell {
-    val directions: Set<Direction> get() = emptySet()
+    val directions: Set<Delta> get() = emptySet()
 }
 
 interface GridLine<C> {

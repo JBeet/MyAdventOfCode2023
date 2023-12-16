@@ -2,8 +2,8 @@ package utils.grid
 
 abstract class AbstractGrid<C>(protected open val bounds: Bounds) : Grid<C> {
     fun connections(pos: Position) = connections(pos, cell(pos))
-    open fun connections(pos: Position, cell: C): Iterable<Position> = directions(pos, cell).map { pos + it.delta }
-    open fun directions(pos: Position, cell: C): Collection<Direction> =
+    open fun connections(pos: Position, cell: C): Iterable<Position> = deltas(pos, cell).map { pos + it.delta }
+    open fun deltas(pos: Position, cell: C): Collection<Delta> =
         if (cell is GridCell) cell.directions else emptySet()
 
     interface GridTraverse<R> {
@@ -34,7 +34,10 @@ abstract class AbstractGrid<C>(protected open val bounds: Bounds) : Grid<C> {
         GridTraverse<R> {
         override fun nextPositions(pos: Position, curValue: R): Iterable<Position> =
             listOf(Direction.N, Direction.E, Direction.S, Direction.W).map { pos + it.delta }
+                .filter { it in this@AbstractGrid }
     }
+
+    open operator fun contains(pos: Position) = pos in bounds
 
     abstract inner class TraverseConnections<R>(override val initialPosition: Position, override val initialValue: R) :
         GridTraverse<R> {
@@ -65,10 +68,10 @@ abstract class AbstractGrid<C>(protected open val bounds: Bounds) : Grid<C> {
 
     open fun cellAsString(pos: Position, cell: C): String = when (connections(pos, cell).toSet()) {
         emptySet<Direction>() -> cell.toString()
-        else -> charFor(directions(pos, cell).toSet())?.toString() ?: cell.toString()
+        else -> charFor(deltas(pos, cell).toSet())?.toString() ?: cell.toString()
     }
 
-    private fun charFor(directions: Set<Direction>): Char? = when (directions) {
+    private fun charFor(directions: Set<Delta>): Char? = when (directions) {
         emptySet<Direction>() -> ' '
         setOf(Direction.N) -> '╵'
         setOf(Direction.E) -> '╶'

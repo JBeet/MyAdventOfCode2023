@@ -68,7 +68,6 @@ open class OpenGrid<C>(
     override fun cell(r: Int, c: Int) = cell(Position(r.toLong(), c.toLong()))
     override fun cell(r: Long, c: Long) = cell(Position(r, c))
     override fun findAll(predicate: (C) -> Boolean): Map<Position, C> = cells.filterValues(predicate)
-    operator fun contains(p: Position) = p in bounds
 
     override fun forEachNonEmpty(action: (Position) -> Unit) = cells.forEach { (pos, _) -> action(pos) }
     override fun countNonEmpty(predicate: (Position) -> Boolean): Int = cells.count { (pos, _) -> predicate(pos) }
