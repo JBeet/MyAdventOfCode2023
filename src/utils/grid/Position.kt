@@ -45,6 +45,15 @@ enum class Direction(override val delta: Position) : Delta {
         S -> N
         W -> E
     }
+
+    val rotateCW: Direction
+        get() = when (this) {
+            N -> E
+            E -> S
+            S -> W
+            W -> N
+        }
+    val rotateCCW: Direction get() = -rotateCW
 }
 
 typealias Directions = Set<Direction>

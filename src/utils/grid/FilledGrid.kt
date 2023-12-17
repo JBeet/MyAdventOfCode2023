@@ -24,6 +24,10 @@ open class FilledGrid<C>(
         check(cells.all { it.size.toLong() == width }) { "expected length $width" }
     }
 
+    val allPositions
+        get() = bounds.rowRange.flatMapTo(mutableSetOf()) { r ->
+            bounds.columnRange.map { c -> Position(r, c) }
+        }
     val rows get() = bounds.rowRange.asSequence().map { row(it) }
     val columns get() = bounds.columnRange.asSequence().map { column(it) }
     val nonEmptyCells
