@@ -6,75 +6,59 @@ import utils.grid.FilledGrid
 import utils.grid.Position
 import utils.println
 import utils.readInput
+import java.util.*
 
-data class PathOption(val dir: Direction, val pathRemaining: Int, val cost: Int, val isNewPath: Boolean) {
-    fun nextOptions(newCost: Int, newPathRemaining: Int) =
-        if (pathRemaining <= 0)
-            listOf(
-                PathOption(dir.rotateCW, newPathRemaining, newCost, true),
-                PathOption(dir.rotateCCW, newPathRemaining, newCost, true)
-            )
-        else
-            listOf(
-                PathOption(dir, pathRemaining - 1, newCost, false),
-                PathOption(dir.rotateCW, newPathRemaining, newCost, true),
-                PathOption(dir.rotateCCW, newPathRemaining, newCost, true)
-            )
+data class Node(val pos: Position, val dir: Direction, val dirSteps: Int) {
+    val nextPos = pos + dir
 
-    fun improves(o: PathOption): Boolean {
-        if (dir != o.dir || isNewPath != o.isNewPath) return false
-        if (cost > o.cost) return false
-        return (pathRemaining > o.pathRemaining) || (pathRemaining == o.pathRemaining && cost < o.cost)
+    fun next() = Node(nextPos, dir, dirSteps + 1)
+    fun rotateCW() = Node(nextPos, dir.rotateCW, 1)
+    fun rotateCCW() = Node(nextPos, dir.rotateCCW, 1)
+}
+
+class LavaDucts(input: List<String>) : FilledGrid<Int>(input.map { l -> l.map { it.digitToInt() } }, 999) {
+    private val visited: MutableMap<Node, Int>
+    private val queue = PriorityQueue(compareBy(Pair<Node, Int>::second))
+    private val target = Position(height - 1, width - 1)
+
+    init {
+        val src = Position(0, 0)
+        val startEast = Node(src, Direction.E, 1)
+        val startSouth = Node(src, Direction.S, 1)
+        visited = mutableMapOf(startEast to 0, startSouth to 0)
+        queue.add(startEast to 0)
+        queue.add(startSouth to 0)
+    }
+
+    private fun add(nextNode: Node, cost: Int) {
+        if (nextNode !in visited.keys) {
+            queue.offer(nextNode to cost)
+            visited[nextNode] = cost
+        }
+    }
+
+    fun part1(): Int = findPath(1, 3)
+    fun part2(): Int = findPath(4, 10)
+
+    private fun findPath(minSteps: Int, maxSteps: Int): Int {
+        while (queue.isNotEmpty()) {
+            val (node, prevCost) = queue.poll()
+            if (node.pos == target && node.dirSteps > minSteps) return prevCost
+            if (node.nextPos !in this) continue
+            val cost = prevCost + cell(node.nextPos)
+            if (node.dirSteps < maxSteps)
+                add(node.next(), cost)
+            if (node.dirSteps >= minSteps) {
+                add(node.rotateCW(), cost)
+                add(node.rotateCCW(), cost)
+            }
+        }
+        error("No path to $target!")
     }
 }
 
 fun main() {
-    fun parse(input: List<String>) = FilledGrid(input.map { l -> l.map { it.digitToInt() } }, 999)
-    fun addOptions(a: List<PathOption>, b: List<PathOption>?) = if (b == null) a else
-        a.filterNot { pa -> b.any { it.improves(pa) } } +
-                b.filterNot { pb -> pb in a || a.any { it.improves(pb) } }
-
-    fun FilledGrid<Int>.findPath(newPathMin: Int, newPathMax: Int): Int {
-        val newPathRemaining = newPathMax - newPathMin
-        val src = Position(0, 0)
-        var maxCost = 0
-        val shortest =
-            mutableMapOf(
-                src to listOf(
-                    PathOption(Direction.E, newPathRemaining, 0, true),
-                    PathOption(Direction.S, newPathRemaining, 0, true)
-                )
-            )
-        val target = Position(height - 1, width - 1)
-        while (target !in shortest) {
-            maxCost++
-            val processed = mutableListOf<Pair<Position, PathOption>>()
-            shortest.toList().forEach { (pos, options) ->
-                options.forEach { pathOption ->
-                    var newPos = pos
-                    var newCost = pathOption.cost
-                    repeat(if (pathOption.isNewPath) newPathMin else 1) {
-                        newPos += pathOption.dir
-                        newCost += cell(newPos)
-                    }
-                    if (newCost <= maxCost) {
-                        shortest.compute(newPos) { _, oldOptions ->
-                            addOptions(pathOption.nextOptions(newCost, newPathRemaining), oldOptions)
-                        }
-                        processed.add(pos to pathOption)
-                    }
-                }
-            }
-            processed.forEach { (node, option) ->
-                shortest[node] = shortest.getValue(node) - option
-            }
-            if (maxCost % 100 == 0) println("$maxCost..")
-        }
-        return maxCost
-    }
-
-    fun FilledGrid<Int>.part1(): Int = findPath(1, 3)
-    fun FilledGrid<Int>.part2(): Int = findPath(4, 10)
+    fun parse(input: List<String>) = LavaDucts(input)
 
     fun part1(input: List<String>) = parse(input).part1()
     fun part2(input: List<String>) = parse(input).part2()
