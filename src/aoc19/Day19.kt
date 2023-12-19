@@ -8,34 +8,28 @@ import utils.split
 private sealed class Condition(val varName: String, val ifTrue: String) {
     abstract fun appliesTo(part: Part): Boolean
     abstract fun partitionVar(range: IntRange): Pair<IntRange, IntRange>
-    fun partition(range: PartRange): Pair<PartRange, PartRange> = when (varName) {
-        "x" -> partitionVar(range.x).map { PartRange(it, range.m, range.a, range.s) }
-        "m" -> partitionVar(range.m).map { PartRange(range.x, it, range.a, range.s) }
-        "a" -> partitionVar(range.a).map { PartRange(range.x, range.m, it, range.s) }
-        "s" -> partitionVar(range.s).map { PartRange(range.x, range.m, range.a, it) }
-        else -> error("unknown var $varName")
-    }
+    fun partition(range: PartRange) = partitionVar(range[varName]).map { range.with(varName, it) }
 }
+
+fun <T, R> Pair<T, T>.map(mapper: (T) -> R): Pair<R, R> = mapper(first) to mapper(second)
 
 private val emptyRange = IntRange(0, -1)
 
 private class ConditionGT(varName: String, val value: Int, ifTrue: String) : Condition(varName, ifTrue) {
     override fun appliesTo(part: Part): Boolean = part[varName] > value
-    override fun partitionVar(range: IntRange): Pair<IntRange, IntRange> {
-        if (value <= range.first) return range to emptyRange
-        if (value > range.last) return emptyRange to range
-        return IntRange(value + 1, range.last) to IntRange(range.first, value)
+    override fun partitionVar(range: IntRange): Pair<IntRange, IntRange> = when {
+        value <= range.first -> range to emptyRange
+        range.last < value -> emptyRange to range
+        else -> IntRange(value + 1, range.last) to IntRange(range.first, value)
     }
 }
 
-fun <T, R> Pair<T, T>.map(mapper: (T) -> R): Pair<R, R> = mapper(first) to mapper(second)
-
 private class ConditionLT(varName: String, val value: Int, ifTrue: String) : Condition(varName, ifTrue) {
     override fun appliesTo(part: Part): Boolean = part[varName] < value
-    override fun partitionVar(range: IntRange): Pair<IntRange, IntRange> {
-        if (value <= range.first) return emptyRange to range
-        if (value > range.last) return range to emptyRange
-        return IntRange(range.first, value - 1) to IntRange(value, range.last)
+    override fun partitionVar(range: IntRange): Pair<IntRange, IntRange> = when {
+        value <= range.first -> emptyRange to range
+        range.last < value -> range to emptyRange
+        else -> IntRange(range.first, value - 1) to IntRange(value, range.last)
     }
 }
 
@@ -54,34 +48,39 @@ private class Workflow(val name: String, val ifAllFalse: String, val conditions:
 
 val IntRange.length get() = endInclusive - start + 1
 
-private data class PartRange(val x: IntRange, val m: IntRange, val a: IntRange, val s: IntRange) {
-    val count: Long get() = 1L * x.length * m.length * a.length * s.length
+private data class PartRange(val map: Map<String, IntRange>) {
+    val count: Long get() = map.values.fold(1L) { acc, r -> acc * r.length }
+    operator fun get(varName: String) = map.getValue(varName)
+    fun with(varName: String, range: IntRange) = PartRange(map + (varName to range))
 }
 
 private data class Part(val map: Map<String, Int>) {
-    val score: Int get() = map.getValue("x") + map.getValue("m") + map.getValue("a") + map.getValue("s")
+    val score: Int get() = map.values.sum()
     operator fun get(varName: String): Int = map.getValue(varName)
 }
 
 private class WorkflowPuzzle(val flows: Map<String, Workflow>) {
-    fun accepts(part: Part): Boolean = execute(flows.getValue("in"), part)
+    private val fullRange = PartRange(mapOf("x" to 1..4000, "m" to 1..4000, "a" to 1..4000, "s" to 1..4000))
 
-    private tailrec fun execute(workflow: Workflow, part: Part): Boolean {
-        val result = workflow.execute(part)
-        if (result == "A") return true
-        if (result == "R") return false
-        return execute(flows.getValue(result), part)
-    }
+    fun accepts(part: Part): Boolean = execute("in", part)
 
-    fun countCombinations(): Long = calculate("in", PartRange(1..4000, 1..4000, 1..4000, 1..4000))
-
-    private fun calculate(name: String, parts: PartRange): Long = when (name) {
-        "A" -> parts.count
-        "R" -> 0L
-        else -> flows.getValue(name).split(parts).fold(0L) { acc, (tgtName, range) ->
-            acc + calculate(tgtName, range)
+    private fun execute(name: String, part: Part): Boolean =
+        when (name) {
+            "A" -> true
+            "R" -> false
+            else -> execute(flow(name).execute(part), part)
         }
-    }
+
+    private fun flow(name: String) = flows.getValue(name)
+
+    fun countCombinations(): Long = calculate("in", fullRange)
+
+    private fun calculate(name: String, parts: PartRange): Long =
+        when (name) {
+            "A" -> parts.count
+            "R" -> 0L
+            else -> flow(name).split(parts).sumOf { (tgtName, range) -> calculate(tgtName, range) }
+        }
 }
 
 private fun parsePart(s: String): Part =
